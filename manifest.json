@@ -1,0 +1,16 @@
+{
+  "name": "English Adventure - Divisha & Devatv",
+  "short_name": "English Adventure",
+  "description": "Fun interactive English learning for Divisha (Class 5) and Devatv (Class 2)",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFF8F0",
+  "theme_color": "#FF6B9D",
+  "categories": ["education", "kids"],
+  "lang": "en",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
