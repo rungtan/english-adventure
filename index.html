@@ -648,6 +648,7 @@ function renderReading(){
     card.appendChild(h('div',{style:{fontSize:17,lineHeight:2,fontWeight:500,color:'#374151',whiteSpace:'pre-wrap',padding:12,background:'#F8FAFC',borderRadius:14,border:'2px dashed #BAE6FD'}},passage.text));
 
     const btns=h('div',{style:{display:'flex',gap:10,marginTop:16,justifyContent:'center'}});
+    btns.appendChild(h('button',{className:'btn',style:{background:'#FEF3C7',color:'#92400E'},onClick:()=>speak(passage.text,0.85)},'🔊 Read Aloud'));
     if(!S.dReadInterval){
       btns.appendChild(h('button',{className:'btn',style:{background:'linear-gradient(135deg,var(--sky),var(--cyan))',color:'#fff'},onClick:()=>{
         S.dReadTimer=0;S.dReadInterval=setInterval(()=>{S.dReadTimer++;const el=document.querySelector('.focus-timer');if(el)el.textContent=formatTime(S.dReadTimer);},1000);render();
@@ -717,6 +718,7 @@ function renderWriting(){
   // Writing area
   const ta=h('textarea',{className:'writing-area',value:S.dWriteText,placeholder:'Start writing here...',onInput:e=>{S.dWriteText=e.target.value;S.dWriteWC=e.target.value.split(/\s+/).filter(Boolean).length;const counter=document.getElementById('wc');if(counter)counter.textContent=`${S.dWriteWC} words`;}});
   card.appendChild(ta);
+  card.appendChild(h('button',{className:'btn',style:{marginTop:8,background:'#E0E7FF',color:'#3730A3'},onClick:()=>speak(S.dWriteText||'Please write something first!',0.85)},'🔊 Read My Writing Aloud'));
 
   // Word counter
   const wcBar=h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:8}});
@@ -760,8 +762,9 @@ function renderHandwriting(){
   card.appendChild(h('div',{style:{fontSize:13,color:'var(--text-muted)',marginBottom:6}},'✍️ Now copy it here (type to practice, write on paper for real practice!):'));
   card.appendChild(h('textarea',{className:'writing-area',value:S.dHandText,placeholder:'Start copying here...',onInput:e=>{S.dHandText=e.target.value;}}));
 
-  const btns=h('div',{style:{display:'flex',gap:10,marginTop:12}});
-  btns.appendChild(h('button',{className:'btn btn-success',onClick:()=>{addStars(3);markDone('d-handwriting');}},'✅ Done Practicing! (+3 Stars)'));
+  const btns=h('div',{style:{display:'flex',gap:10,marginTop:12,flexWrap:'wrap'}});
+  btns.appendChild(h('button',{className:'btn',style:{background:'#FEF3C7',color:'#92400E'},onClick:()=>speak(ex.text,0.85)},'🔊 Read Aloud'));
+  btns.appendChild(h('button',{className:'btn btn-success',onClick:()=>{addStars(3);markDone('d-handwriting');}},'✅ Done! (+3 Stars)'));
   btns.appendChild(h('button',{className:'btn btn-ghost',onClick:()=>{S.dHandText='';render();}},'🔄 Clear'));
   card.appendChild(btns);w.appendChild(card);
 
@@ -922,12 +925,27 @@ function renderGamesV(){
         h('div',{style:{fontSize:36,marginBottom:8}},g.icon),h('div',{style:{fontWeight:800,fontSize:18,color:g.c}},g.t),h('div',{style:{fontSize:13,color:'#6B7280',marginTop:4}},g.d)));});
     w.appendChild(grid);return w;}
   w.appendChild(h('button',{className:'btn btn-ghost',style:{marginBottom:16},onClick:()=>{S.game=null;render();}},'← Back'));
-  // Render just the game card, not the full section wrapper
-  if(S.game==='scramble'||S.game==='missing'){
-    const tempW=renderGamesD();
-    // renderGamesD returns a div with back btn + card; extract just the game card (second child)
-    const children=Array.from(tempW.children);
-    children.forEach((c,i)=>{if(i>0)w.appendChild(c);});
+  // Render just the game card without DOM manipulation tricks
+  if(S.game==='scramble'){const sw=SCRAMBLE_WDS[S.gI];const card=h('div',{className:'card',style:{textAlign:'center',background:'linear-gradient(135deg,#F0FDFA,#F0F4FF)',border:'2px solid var(--cyan)'}});
+    card.appendChild(h('h3',{style:{fontFamily:'var(--font-display)',fontSize:22,color:'var(--cyan)',marginBottom:16}},'🔀 Unscramble!'));
+    card.appendChild(h('div',{style:{fontSize:13,color:'#6B7280',marginBottom:8}},`Hint: ${sw.hint}`));
+    const tiles=h('div',{style:{display:'flex',gap:6,justifyContent:'center',flexWrap:'wrap',marginBottom:20}});
+    S.gScrambled.split('').forEach((l,i)=>{tiles.appendChild(h('span',{className:'tile',style:{background:'linear-gradient(135deg,var(--cyan),#0891B2)',color:'#fff',animation:`popIn .3s ease-out ${i*.05}s both`}},l.toUpperCase()));});card.appendChild(tiles);
+    card.appendChild(h('input',{className:'input-spell'+(S.gFB==='correct'?' correct':S.gFB==='wrong'?' incorrect':''),value:S.gAns,placeholder:'Type word...',disabled:!!S.gFB,autofocus:!S.gFB,style:{marginBottom:12},onInput:e=>{S.gAns=e.target.value;},onKeydown:e=>{if(e.key==='Enter'&&!S.gFB&&S.gAns.trim()){if(S.gAns.toLowerCase().trim()===sw.word){S.gFB='correct';playCorrect();addStars(2);}else{S.gFB='wrong';playWrong();}render();}}}));
+    if(!S.gFB) card.appendChild(h('button',{className:'btn btn-primary',onClick:()=>{if(S.gAns.toLowerCase().trim()===sw.word){S.gFB='correct';playCorrect();addStars(2);}else{S.gFB='wrong';playWrong();}render();}},'Check!'));
+    if(S.gFB){const fb=h('div',{style:{animation:'popIn .3s ease'}});fb.appendChild(h('div',{style:{fontSize:18,fontWeight:800,color:S.gFB==='correct'?'#059669':'#DC2626',marginBottom:8}},S.gFB==='correct'?'🎉 +2 Stars!':`Word: ${sw.word}`));
+      fb.appendChild(h('button',{className:'btn btn-success',onClick:()=>{S.gI=(S.gI+1)%SCRAMBLE_WDS.length;S.gAns='';S.gFB=null;S.gScrambled=scrambleW(SCRAMBLE_WDS[S.gI].word);render();}},'Next →'));card.appendChild(fb);}
+    w.appendChild(card);
+  } else if(S.game==='missing'){const mw=MISSING_WDS[S.gI];const card=h('div',{className:'card',style:{textAlign:'center',background:'linear-gradient(135deg,#FFF0F5,#F5F0FF)',border:'2px solid var(--rose)'}});
+    card.appendChild(h('h3',{style:{fontFamily:'var(--font-display)',fontSize:22,color:'var(--rose)',marginBottom:16}},'🕳️ Missing Letters!'));
+    const tiles=h('div',{style:{display:'flex',gap:6,justifyContent:'center',flexWrap:'wrap',marginBottom:20}});
+    mw.word.split('').forEach((l,i)=>{if(mw.m.includes(i)){let bdr='#E2E8F0',bg='#fff';if(S.gFB==='correct'){bdr='var(--teal)';bg='#D1FAE5';}else if(S.gFB==='wrong'&&(S.gLetters[i]||'').toLowerCase()!==l){bdr='var(--red)';bg='#FEE2E2';}else if(S.gFB==='wrong'){bdr='var(--teal)';bg='#D1FAE5';}
+      tiles.appendChild(h('input',{style:{width:40,height:48,border:`3px solid ${bdr}`,borderRadius:10,textAlign:'center',fontFamily:'var(--font-mono)',fontSize:22,textTransform:'lowercase',outline:'none',background:bg},value:S.gLetters[i]||'',disabled:!!S.gFB,onInput:e=>{S.gLetters[i]=e.target.value.slice(-1);}}))}
+    else tiles.appendChild(h('span',{className:'tile',style:{background:'#F1F5F9',color:'#374151'}},l));});card.appendChild(tiles);
+    if(!S.gFB) card.appendChild(h('button',{className:'btn btn-primary',onClick:()=>{let ok=true;mw.m.forEach(p=>{if((S.gLetters[p]||'').toLowerCase()!==mw.word[p])ok=false;});if(ok){S.gFB='correct';playCorrect();addStars(2);}else{S.gFB='wrong';playWrong();}render();}},'Check!'));
+    if(S.gFB){const fb=h('div',{style:{animation:'popIn .3s ease'}});fb.appendChild(h('div',{style:{fontSize:18,fontWeight:800,color:S.gFB==='correct'?'#059669':'#DC2626',marginBottom:8}},S.gFB==='correct'?'🎉 +2 Stars!':`Word: ${mw.word}`));
+      fb.appendChild(h('button',{className:'btn btn-success',onClick:()=>{S.gI=(S.gI+1)%MISSING_WDS.length;S.gLetters={};S.gFB=null;render();}},'Next →'));card.appendChild(fb);}
+    w.appendChild(card);
   }
   return w;
 }
