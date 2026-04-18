@@ -132,11 +132,23 @@ function load(){try{const k=S.user;const s=localStorage.getItem(`ea_${k}_stars`)
 const MSGS_D=["You're doing amazing, Divisha! 🌟","Mistakes help us learn! Keep going! 💪","Your brain is building new connections! 🧠","You're becoming a spelling champion! 🏆","Practice makes progress! 🌈"];
 const MSGS_V=["Great job, Devatv! You're a superstar! 🌟","Keep reading and imagining! 💫","Your creativity is wonderful! 🎨","Focus power activated! 🧠⚡","You're growing every day! 🌱"];
 
+// ── SOUND (Web Speech API) ──
+function speak(text,rate=0.85){
+  if(!window.speechSynthesis)return;
+  window.speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text);
+  u.lang='en-US';u.rate=rate;u.pitch=1.1;u.volume=1;
+  window.speechSynthesis.speak(u);
+}
+function playCorrect(){speak('Correct! Great job!',1);}
+function playWrong(){speak('Try again!',1);}
+function playWord(w){speak(w,0.75);}
+
 function addStars(n){S.stars+=n;const msgs=S.user==='divisha'?MSGS_D:MSGS_V;S.encouragement=msgs[Math.floor(Math.random()*msgs.length)];save();render();setTimeout(()=>{S.encouragement='';render();},3500);}
 function markDone(id){if(!S.completedLessons.includes(id)){S.completedLessons.push(id);addStars(5);save();}}
 function scrambleW(w){let a=w.split('');for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}const r=a.join('');return r===w?scrambleW(w):r;}
 
-function h(tag,attrs,...ch){const el=document.createElement(tag);if(attrs)for(const[k,v]of Object.entries(attrs)){if(k==='style'&&typeof v==='object')Object.assign(el.style,v);else if(k.startsWith('on'))el.addEventListener(k.slice(2).toLowerCase(),v);else if(k==='className')el.className=v;else if(k==='innerHTML'){el.innerHTML=v;}else if(k==='disabled'&&v)el.disabled=true;else if(k==='value')el.value=v;else if(k==='placeholder')el.placeholder=v;else if(k==='autofocus'&&v)setTimeout(()=>el.focus(),80);else el.setAttribute(k,v);}for(const c of ch){if(c==null)continue;if(typeof c==='string'||typeof c==='number')el.appendChild(document.createTextNode(c));else if(Array.isArray(c))c.forEach(x=>{if(x)el.appendChild(x);});else el.appendChild(c);}return el;}
+function h(tag,attrs,...ch){const el=document.createElement(tag);if(attrs)for(const[k,v]of Object.entries(attrs)){if(k==='style'&&typeof v==='object')Object.assign(el.style,v);else if(k.startsWith('on'))el.addEventListener(k.slice(2).toLowerCase(),v);else if(k==='className')el.className=v;else if(k==='innerHTML'){el.innerHTML=v;}else if(k==='disabled'&&v)el.disabled=true;else if(k==='value'){el.value=v;el.setAttribute('value',v);}else if(k==='placeholder')el.placeholder=v;else if(k==='autofocus'&&v)setTimeout(()=>{el.focus();if(typeof el.selectionStart==='number'){const len=el.value.length;el.selectionStart=len;el.selectionEnd=len;}},60);else el.setAttribute(k,v);}for(const c of ch){if(c==null)continue;if(typeof c==='string'||typeof c==='number')el.appendChild(document.createTextNode(c));else if(Array.isArray(c))c.forEach(x=>{if(x)el.appendChild(x);});else el.appendChild(c);}return el;}
 
 // ═══════════════════════════════════════════════
 // ALL DATA
@@ -436,7 +448,9 @@ function renderPhonics(){
       const c=h('div',{className:'card',style:{animation:`popIn .3s ease-out ${i*.04}s both`,padding:14}});
       const r=h('div',{style:{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}});
       r.appendChild(h('span',{className:'word-card',style:{background:'linear-gradient(135deg,#DDD6FE,#C4B5FD)',color:'#5B21B6'}},ex.word));
-      r.appendChild(h('span',{className:'tag',style:{background:'#DBEAFE',color:'#1E40AF'}},ex.sound));c.appendChild(r);
+      r.appendChild(h('span',{className:'tag',style:{background:'#DBEAFE',color:'#1E40AF'}},ex.sound));
+      r.appendChild(h('button',{className:'btn',style:{background:'#F0FDF4',color:'#059669',padding:'4px 10px',fontSize:13},onClick:()=>playWord(ex.word)},'🔊'));
+      c.appendChild(r);
       c.appendChild(h('div',{style:{marginTop:6,fontSize:13,color:'#6B7280'}},`💡 ${ex.hint}`));eg.appendChild(c);});w.appendChild(eg);
     w.appendChild(h('button',{className:'btn btn-primary btn-block',style:{marginTop:20},onClick:()=>{S.phPractice=true;S.phPI=0;S.phScore=0;S.phFB=null;S.phTyped='';S.phAnswer='';render();}},'🎯 Practice!'));
   } else {
@@ -448,10 +462,10 @@ function renderPhonics(){
     if(pq.answer==='short'||pq.answer==='long'){
       const btns=h('div',{style:{display:'flex',gap:12,justifyContent:'center'}});
       ['short','long'].forEach(opt=>{let bg='#E2E8F0',col='#374151';if(S.phFB&&S.phAnswer===opt){bg=S.phFB==='correct'?'var(--teal)':'var(--red)';col='#fff';}
-        btns.appendChild(h('button',{className:'btn',disabled:!!S.phFB,style:{background:bg,color:col,padding:'12px 30px',fontSize:16},onClick:()=>{S.phAnswer=opt;if(opt===pq.answer){S.phFB='correct';S.phScore++;addStars(1);}else{S.phFB='wrong';render();}}},opt==='short'?'Short Sound':'Long Sound'));});card.appendChild(btns);
+        btns.appendChild(h('button',{className:'btn',disabled:!!S.phFB,style:{background:bg,color:col,padding:'12px 30px',fontSize:16},onClick:()=>{S.phAnswer=opt;if(opt===pq.answer){S.phFB='correct';S.phScore++;playCorrect();addStars(1);}else{S.phFB='wrong';playWrong();render();}}},opt==='short'?'Short Sound':'Long Sound'));});card.appendChild(btns);
     } else {
-      card.appendChild(h('input',{className:'input-spell'+(S.phFB==='correct'?' correct':S.phFB==='wrong'?' incorrect':''),value:S.phTyped,placeholder:'Type answer...',disabled:!!S.phFB,autofocus:!S.phFB,onInput:e=>{S.phTyped=e.target.value;},onKeydown:e=>{if(e.key==='Enter'&&!S.phFB){S.phAnswer=S.phTyped;if(S.phTyped.toLowerCase().trim()===pq.answer.toLowerCase()){S.phFB='correct';S.phScore++;addStars(1);}else{S.phFB='wrong';render();}}}}));
-      if(!S.phFB) card.appendChild(h('button',{className:'btn btn-primary',style:{marginTop:12},onClick:()=>{S.phAnswer=S.phTyped;if(S.phTyped.toLowerCase().trim()===pq.answer.toLowerCase()){S.phFB='correct';S.phScore++;addStars(1);}else{S.phFB='wrong';render();}}},'Check'));
+      card.appendChild(h('input',{className:'input-spell'+(S.phFB==='correct'?' correct':S.phFB==='wrong'?' incorrect':''),value:S.phTyped,placeholder:'Type answer...',disabled:!!S.phFB,autofocus:!S.phFB,onInput:e=>{S.phTyped=e.target.value;},onKeydown:e=>{if(e.key==='Enter'&&!S.phFB&&S.phTyped.trim()){S.phAnswer=S.phTyped;if(S.phTyped.toLowerCase().trim()===pq.answer.toLowerCase()){S.phFB='correct';S.phScore++;playCorrect();addStars(1);}else{S.phFB='wrong';playWrong();render();}}}}));
+      if(!S.phFB) card.appendChild(h('button',{className:'btn btn-primary',style:{marginTop:12},onClick:()=>{S.phAnswer=S.phTyped;if(S.phTyped.toLowerCase().trim()===pq.answer.toLowerCase()){S.phFB='correct';S.phScore++;playCorrect();addStars(1);}else{S.phFB='wrong';playWrong();render();}}},'Check'));
     }
     if(S.phFB){const fb=h('div',{style:{marginTop:16,animation:'popIn .3s ease'}});
       fb.appendChild(h('div',{style:{fontSize:18,fontWeight:800,color:S.phFB==='correct'?'#059669':'#DC2626'}},S.phFB==='correct'?'🎉 Correct! +1 Star!':`Answer: ${pq.answer}`));
@@ -484,7 +498,7 @@ function renderSyllables(){
     const btns=h('div',{style:{display:'flex',gap:10,justifyContent:'center',flexWrap:'wrap'}});
     [1,2,3,4,5].forEach(n=>{let bg='#F1F5F9',col='#374151';if(S.clapG==n){if(S.clapFB==='correct'){bg='var(--teal)';col='#fff';}else if(S.clapFB){bg='var(--red)';col='#fff';}else{bg='var(--violet)';col='#fff';}}
       btns.appendChild(h('button',{className:'btn',disabled:!!S.clapFB,style:{width:48,height:48,borderRadius:'50%',background:bg,color:col,fontSize:20,fontWeight:800,padding:0},onClick:()=>{S.clapG=''+n;render();}},String(n)));});card.appendChild(btns);
-    if(S.clapG&&!S.clapFB) card.appendChild(h('button',{className:'btn',style:{marginTop:12,background:'linear-gradient(135deg,var(--violet),var(--deep-purple))',color:'#fff'},onClick:()=>{if(parseInt(S.clapG)===cw.c){S.clapFB='correct';addStars(1);}else{S.clapFB=`"${cw.w}" has ${cw.c} syllables`;render();}}},'Check!'));
+    if(S.clapG&&!S.clapFB) card.appendChild(h('button',{className:'btn',style:{marginTop:12,background:'linear-gradient(135deg,var(--violet),var(--deep-purple))',color:'#fff'},onClick:()=>{if(parseInt(S.clapG)===cw.c){S.clapFB='correct';playCorrect();addStars(1);}else{S.clapFB=`"${cw.w}" has ${cw.c} syllables`;playWrong();render();}}},'Check!'));
     if(S.clapFB){const fb=h('div',{style:{marginTop:16,animation:'popIn .3s ease'}});fb.appendChild(h('div',{style:{fontSize:16,fontWeight:800,color:S.clapFB==='correct'?'#059669':'#DC2626'}},S.clapFB==='correct'?'🎉 Yes! +1 Star!':S.clapFB));
       fb.appendChild(h('button',{className:'btn btn-success',style:{marginTop:12},onClick:()=>{if(S.clapI<CLAP_WORDS.length-1){S.clapI++;S.clapG='';S.clapFB=null;render();}else{markDone('syllables');S.clapMode=false;render();}}},S.clapI<CLAP_WORDS.length-1?'Next →':'🏆 Finish!'));card.appendChild(fb);}
     w.appendChild(card);}
@@ -531,14 +545,17 @@ function renderPractice(){
   const card=h('div',{className:'card',style:{background:'linear-gradient(135deg,#FFF0F5,#F5F0FF)',border:'2px solid var(--rose)',textAlign:'center'}});
   card.appendChild(h('div',{style:{fontSize:13,color:'#6B7280',marginBottom:8}},`Word ${S.pWI+1}/${words.length} • Score: ${S.pScore}/${S.pTotal}`));
   if(S.pPhase==='look'){const d=h('div',{style:{animation:'popIn .3s ease'}});d.appendChild(h('div',{style:{fontSize:14,color:'#6B7280',marginBottom:12}},'👀 LOOK carefully. Say it. Break into syllables.'));
-    d.appendChild(h('div',{className:'word-card',style:{background:'linear-gradient(135deg,var(--rose),var(--purple))',color:'#fff',fontSize:30,marginBottom:16}},cw.word));
+    const wRow=h('div',{style:{display:'flex',alignItems:'center',justifyContent:'center',gap:12,marginBottom:16}});
+    wRow.appendChild(h('div',{className:'word-card',style:{background:'linear-gradient(135deg,var(--rose),var(--purple))',color:'#fff',fontSize:30}},cw.word));
+    wRow.appendChild(h('button',{className:'btn',style:{background:'#F0FDF4',color:'#059669',fontSize:18,padding:'8px 14px'},onClick:()=>playWord(cw.word)},'🔊'));
+    d.appendChild(wRow);
     if(cw.syl!=='—') d.appendChild(h('div',{style:{marginBottom:10}},h('span',{className:'tag',style:{background:'#EDE9FE',color:'#5B21B6',fontSize:14}},`Syllables: ${cw.syl}`)));
     d.appendChild(h('div',{style:{padding:'10px 14px',background:'#FFFBEB',borderRadius:12,fontSize:14,color:'#78350F',fontWeight:600,marginBottom:16,border:'2px dashed #FDE68A'}},`🧠 ${cw.trick}`));
     d.appendChild(h('button',{className:'btn btn-primary',style:{fontSize:16,padding:'12px 28px'},onClick:()=>{S.pPhase='type';S.pTyped='';render();}},'I\'m ready! Hide it! 🙈'));card.appendChild(d);
   } else if(S.pPhase==='type'){const d=h('div',{style:{animation:'popIn .3s ease'}});d.appendChild(h('div',{style:{fontSize:14,color:'#6B7280',marginBottom:16}},'✍️ WRITE from memory!'));
-    d.appendChild(h('input',{className:'input-spell',value:S.pTyped,placeholder:'Type the word...',autofocus:true,style:{fontSize:22,marginBottom:12},onInput:e=>{S.pTyped=e.target.value;},onKeydown:e=>{if(e.key==='Enter'&&S.pTyped.trim()){S.pPhase='result';S.pTotal++;if(S.pTyped.toLowerCase().trim()===cw.word.toLowerCase().trim()){S.pScore++;addStars(2);}else{render();}}}}));
+    d.appendChild(h('input',{className:'input-spell',value:S.pTyped,placeholder:'Type the word...',autofocus:true,style:{fontSize:22,marginBottom:12},onInput:e=>{S.pTyped=e.target.value;},onKeydown:e=>{if(e.key==='Enter'&&S.pTyped.trim()){S.pPhase='result';S.pTotal++;if(S.pTyped.toLowerCase().trim()===cw.word.toLowerCase().trim()){S.pScore++;playCorrect();addStars(2);}else{playWrong();}render();}}}));
     const btns=h('div',{style:{display:'flex',gap:10,justifyContent:'center',flexWrap:'wrap'}});
-    btns.appendChild(h('button',{className:'btn btn-primary',onClick:()=>{if(S.pTyped.trim()){S.pPhase='result';S.pTotal++;if(S.pTyped.toLowerCase().trim()===cw.word.toLowerCase().trim()){S.pScore++;addStars(2);}else{render();}}}},'Check ✓'));
+    btns.appendChild(h('button',{className:'btn btn-primary',onClick:()=>{if(S.pTyped.trim()){S.pPhase='result';S.pTotal++;if(S.pTyped.toLowerCase().trim()===cw.word.toLowerCase().trim()){S.pScore++;playCorrect();addStars(2);}else{playWrong();}render();}}},'Check ✓'));
     btns.appendChild(h('button',{className:'btn',style:{background:'#FEF3C7',color:'#92400E'},onClick:()=>{S.pHint=!S.pHint;render();}},S.pHint?'Hide':'💡 Hint'));d.appendChild(btns);
     if(S.pHint) d.appendChild(h('div',{style:{marginTop:12,padding:'10px',background:'#FFFBEB',borderRadius:10,fontSize:14,color:'#78350F',fontWeight:600,animation:'floatIn .3s ease'}},`🧠 ${cw.trick}`));card.appendChild(d);
   } else {const ok=S.pTyped.toLowerCase().trim()===cw.word.toLowerCase().trim();const d=h('div',{style:{animation:'popIn .3s ease'}});
@@ -581,8 +598,8 @@ function renderGamesD(){
     card.appendChild(h('div',{style:{fontSize:13,color:'#6B7280',marginBottom:8}},`Hint: ${sw.hint}`));
     const tiles=h('div',{style:{display:'flex',gap:6,justifyContent:'center',flexWrap:'wrap',marginBottom:20}});
     S.gScrambled.split('').forEach((l,i)=>{tiles.appendChild(h('span',{className:'tile',style:{background:'linear-gradient(135deg,var(--cyan),#0891B2)',color:'#fff',animation:`popIn .3s ease-out ${i*.05}s both`}},l.toUpperCase()));});card.appendChild(tiles);
-    card.appendChild(h('input',{className:'input-spell'+(S.gFB==='correct'?' correct':S.gFB==='wrong'?' incorrect':''),value:S.gAns,placeholder:'Type word...',disabled:!!S.gFB,autofocus:!S.gFB,style:{marginBottom:12},onInput:e=>{S.gAns=e.target.value;},onKeydown:e=>{if(e.key==='Enter'&&!S.gFB){if(S.gAns.toLowerCase().trim()===sw.word){S.gFB='correct';addStars(2);}else{S.gFB='wrong';render();}}}}));
-    if(!S.gFB) card.appendChild(h('button',{className:'btn btn-primary',onClick:()=>{if(S.gAns.toLowerCase().trim()===sw.word){S.gFB='correct';addStars(2);}else{S.gFB='wrong';render();}}},'Check!'));
+    card.appendChild(h('input',{className:'input-spell'+(S.gFB==='correct'?' correct':S.gFB==='wrong'?' incorrect':''),value:S.gAns,placeholder:'Type word...',disabled:!!S.gFB,autofocus:!S.gFB,style:{marginBottom:12},onInput:e=>{S.gAns=e.target.value;},onKeydown:e=>{if(e.key==='Enter'&&!S.gFB&&S.gAns.trim()){if(S.gAns.toLowerCase().trim()===sw.word){S.gFB='correct';playCorrect();addStars(2);}else{S.gFB='wrong';playWrong();}render();}}}));
+    if(!S.gFB) card.appendChild(h('button',{className:'btn btn-primary',onClick:()=>{if(S.gAns.toLowerCase().trim()===sw.word){S.gFB='correct';playCorrect();addStars(2);}else{S.gFB='wrong';playWrong();}render();}},'Check!'));
     if(S.gFB){const fb=h('div',{style:{animation:'popIn .3s ease'}});fb.appendChild(h('div',{style:{fontSize:18,fontWeight:800,color:S.gFB==='correct'?'#059669':'#DC2626',marginBottom:8}},S.gFB==='correct'?'🎉 +2 Stars!':`Word: ${sw.word}`));
       fb.appendChild(h('button',{className:'btn btn-success',onClick:()=>{S.gI=(S.gI+1)%SCRAMBLE_WDS.length;S.gAns='';S.gFB=null;S.gScrambled=scrambleW(SCRAMBLE_WDS[S.gI].word);render();}},'Next →'));card.appendChild(fb);}
     w.appendChild(card);
@@ -590,9 +607,9 @@ function renderGamesD(){
     card.appendChild(h('h3',{style:{fontFamily:'var(--font-display)',fontSize:22,color:'var(--rose)',marginBottom:16}},'🕳️ Missing Letters!'));
     const tiles=h('div',{style:{display:'flex',gap:6,justifyContent:'center',flexWrap:'wrap',marginBottom:20}});
     mw.word.split('').forEach((l,i)=>{if(mw.m.includes(i)){let bdr='#E2E8F0',bg='#fff';if(S.gFB==='correct'){bdr='var(--teal)';bg='#D1FAE5';}else if(S.gFB==='wrong'&&(S.gLetters[i]||'').toLowerCase()!==l){bdr='var(--red)';bg='#FEE2E2';}else if(S.gFB==='wrong'){bdr='var(--teal)';bg='#D1FAE5';}
-      tiles.appendChild(h('input',{style:{width:40,height:48,border:`3px solid ${bdr}`,borderRadius:10,textAlign:'center',fontFamily:'var(--font-mono)',fontSize:22,textTransform:'lowercase',outline:'none',background:bg},value:S.gLetters[i]||'',disabled:!!S.gFB,onInput:e=>{S.gLetters[i]=e.target.value.slice(-1);render();}}));}
+      tiles.appendChild(h('input',{style:{width:40,height:48,border:`3px solid ${bdr}`,borderRadius:10,textAlign:'center',fontFamily:'var(--font-mono)',fontSize:22,textTransform:'lowercase',outline:'none',background:bg},value:S.gLetters[i]||'',disabled:!!S.gFB,onInput:e=>{S.gLetters[i]=e.target.value.slice(-1);}}))}
     else tiles.appendChild(h('span',{className:'tile',style:{background:'#F1F5F9',color:'#374151'}},l));});card.appendChild(tiles);
-    if(!S.gFB) card.appendChild(h('button',{className:'btn btn-primary',onClick:()=>{let ok=true;mw.m.forEach(p=>{if((S.gLetters[p]||'').toLowerCase()!==mw.word[p])ok=false;});if(ok){S.gFB='correct';addStars(2);}else{S.gFB='wrong';render();}}},'Check!'));
+    if(!S.gFB) card.appendChild(h('button',{className:'btn btn-primary',onClick:()=>{let ok=true;mw.m.forEach(p=>{if((S.gLetters[p]||'').toLowerCase()!==mw.word[p])ok=false;});if(ok){S.gFB='correct';playCorrect();addStars(2);}else{S.gFB='wrong';playWrong();}render();}},'Check!'));
     if(S.gFB){const fb=h('div',{style:{animation:'popIn .3s ease'}});fb.appendChild(h('div',{style:{fontSize:18,fontWeight:800,color:S.gFB==='correct'?'#059669':'#DC2626',marginBottom:8}},S.gFB==='correct'?'🎉 +2 Stars!':`Word: ${mw.word}`));
       fb.appendChild(h('button',{className:'btn btn-success',onClick:()=>{S.gI=(S.gI+1)%MISSING_WDS.length;S.gLetters={};S.gFB=null;render();}},'Next →'));card.appendChild(fb);}
     w.appendChild(card);
@@ -603,8 +620,8 @@ function renderGamesD(){
     row.appendChild(h('span',{style:{padding:'8px 12px',borderRadius:10,background:'#FEF3C7',color:'#92400E',fontWeight:800,fontFamily:'var(--font-mono)',fontSize:18}},ch.base));
     if(ch.suf){row.appendChild(h('span',{style:{fontSize:18}},'+'));row.appendChild(h('span',{style:{padding:'8px 12px',borderRadius:10,background:'#D1FAE5',color:'#065F46',fontWeight:800,fontFamily:'var(--font-mono)',fontSize:18}},'-'+ch.suf));}
     row.appendChild(h('span',{style:{fontSize:18}},'='));row.appendChild(h('span',{style:{fontSize:24}},'❓'));card.appendChild(row);
-    card.appendChild(h('input',{className:'input-spell'+(S.gFB==='correct'?' correct':S.gFB==='wrong'?' incorrect':''),value:S.gAns,placeholder:'Type full word...',disabled:!!S.gFB,autofocus:!S.gFB,style:{marginBottom:12},onInput:e=>{S.gAns=e.target.value;},onKeydown:e=>{if(e.key==='Enter'&&!S.gFB){if(S.gAns.toLowerCase().trim()===ch.res){S.gFB='correct';addStars(2);}else{S.gFB='wrong';render();}}}}));
-    if(!S.gFB) card.appendChild(h('button',{className:'btn btn-primary',onClick:()=>{if(S.gAns.toLowerCase().trim()===ch.res){S.gFB='correct';addStars(2);}else{S.gFB='wrong';render();}}},'Check!'));
+    card.appendChild(h('input',{className:'input-spell'+(S.gFB==='correct'?' correct':S.gFB==='wrong'?' incorrect':''),value:S.gAns,placeholder:'Type full word...',disabled:!!S.gFB,autofocus:!S.gFB,style:{marginBottom:12},onInput:e=>{S.gAns=e.target.value;},onKeydown:e=>{if(e.key==='Enter'&&!S.gFB&&S.gAns.trim()){if(S.gAns.toLowerCase().trim()===ch.res){S.gFB='correct';playCorrect();addStars(2);}else{S.gFB='wrong';playWrong();}render();}}}));
+    if(!S.gFB) card.appendChild(h('button',{className:'btn btn-primary',onClick:()=>{if(S.gAns.toLowerCase().trim()===ch.res){S.gFB='correct';playCorrect();addStars(2);}else{S.gFB='wrong';playWrong();}render();}},'Check!'));
     if(S.gFB){const fb=h('div',{style:{animation:'popIn .3s ease'}});fb.appendChild(h('div',{style:{fontSize:18,fontWeight:800,color:S.gFB==='correct'?'#059669':'#DC2626',marginBottom:8}},S.gFB==='correct'?'🎉 +2 Stars!':`Answer: ${ch.res}`));
       fb.appendChild(h('div',{style:{padding:'8px 12px',background:'#fff',borderRadius:10,fontSize:14,color:'#78350F',fontWeight:600,marginBottom:12,border:'2px dashed #FDE68A'}},`📏 ${ch.note}`));
       fb.appendChild(h('button',{className:'btn btn-success',onClick:()=>{S.gI=(S.gI+1)%BUILDER_CH.length;S.gAns='';S.gFB=null;render();}},'Next →'));card.appendChild(fb);}
@@ -658,7 +675,7 @@ function renderReading(){
       qd.appendChild(opts);card.appendChild(qd);});
 
     if(!S.dReadFB&&Object.keys(S.dReadAnswers).length===passage.questions.length){
-      card.appendChild(h('button',{className:'btn btn-primary btn-block',onClick:()=>{S.dReadFB='done';let correct=0;passage.questions.forEach((q,qi)=>{if(S.dReadAnswers[qi]===q.ans)correct++;});addStars(correct*2);render();}},'Check Answers!'));
+      card.appendChild(h('button',{className:'btn btn-primary btn-block',onClick:()=>{S.dReadFB='done';let correct=0;passage.questions.forEach((q,qi)=>{if(S.dReadAnswers[qi]===q.ans)correct++;});if(correct===passage.questions.length)playCorrect();else playWrong();addStars(correct*2);render();}},'Check Answers!'));
     }
     if(S.dReadFB){
       let correct=0;passage.questions.forEach((q,qi)=>{if(S.dReadAnswers[qi]===q.ans)correct++;});
@@ -791,9 +808,20 @@ function initFocusGame(id){
 function addToSequence(){
   const colors=['#FF6B9D','#4ECDC4','#F59E0B','#A78BFA','#06B6D4','#EF4444','#10B981','#EC4899'];
   S.dFocusSeq.push(Math.floor(Math.random()*colors.length));
-  S.dFocusPhase='watch';S.dFocusUserSeq=[];S.dFocusFB=null;
-  // Flash sequence
-  setTimeout(()=>{S.dFocusPhase='input';render();},S.dFocusSeq.length*700+500);
+  S.dFocusPhase='watch';S.dFocusUserSeq=[];S.dFocusFB=null;S.dFocusI=0;
+  render();
+  // Flash each colour in the sequence one by one
+  S.dFocusSeq.forEach((colorIdx,step)=>{
+    setTimeout(()=>{
+      S.dFocusI=colorIdx;
+      const btns=document.querySelectorAll('.seq-btn');
+      if(btns[colorIdx]){btns[colorIdx].style.opacity='1';btns[colorIdx].style.transform='scale(1.2)';btns[colorIdx].style.boxShadow='0 0 20px rgba(0,0,0,.4)';}
+      setTimeout(()=>{
+        if(btns[colorIdx]){btns[colorIdx].style.opacity='0.4';btns[colorIdx].style.transform='scale(1)';btns[colorIdx].style.boxShadow='none';}
+        if(step===S.dFocusSeq.length-1){S.dFocusPhase='input';render();}
+      },500);
+    },step*800+300);
+  });
 }
 
 function renderSequenceGame(){
@@ -804,14 +832,13 @@ function renderSequenceGame(){
 
   const grid=h('div',{style:{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10,maxWidth:300,margin:'0 auto',marginBottom:16}});
   colors.forEach((col,i)=>{
-    const isActive=S.dFocusPhase==='watch'&&S.dFocusSeq.includes(i);
-    grid.appendChild(h('button',{style:{width:'100%',aspectRatio:'1',borderRadius:14,background:col,border:'none',cursor:S.dFocusPhase==='input'?'pointer':'default',opacity:S.dFocusPhase==='watch'?0.4:0.9,transition:'all .2s',transform:isActive?'scale(1.1)':'scale(1)'},
-      disabled:S.dFocusPhase!=='input',
+    grid.appendChild(h('button',{className:'seq-btn',style:{width:'100%',aspectRatio:'1',borderRadius:14,background:col,border:'none',cursor:S.dFocusPhase==='input'?'pointer':'not-allowed',opacity:'0.4',transition:'all .2s'},
+      disabled:S.dFocusPhase!=='input'||!!S.dFocusFB,
       onClick:()=>{
         S.dFocusUserSeq.push(i);
         const idx=S.dFocusUserSeq.length-1;
-        if(S.dFocusUserSeq[idx]!==S.dFocusSeq[idx]){S.dFocusFB='wrong';render();return;}
-        if(S.dFocusUserSeq.length===S.dFocusSeq.length){S.dFocusFB='correct';addStars(S.dFocusSeq.length);render();}else{render();}
+        if(S.dFocusUserSeq[idx]!==S.dFocusSeq[idx]){S.dFocusFB='wrong';playWrong();render();return;}
+        if(S.dFocusUserSeq.length===S.dFocusSeq.length){S.dFocusFB='correct';playCorrect();addStars(S.dFocusSeq.length);render();}else{render();}
       }}));
   });
   card.appendChild(grid);
@@ -895,8 +922,13 @@ function renderGamesV(){
         h('div',{style:{fontSize:36,marginBottom:8}},g.icon),h('div',{style:{fontWeight:800,fontSize:18,color:g.c}},g.t),h('div',{style:{fontSize:13,color:'#6B7280',marginTop:4}},g.d)));});
     w.appendChild(grid);return w;}
   w.appendChild(h('button',{className:'btn btn-ghost',style:{marginBottom:16},onClick:()=>{S.game=null;render();}},'← Back'));
-  // Reuse Divisha's game renderers
-  if(S.game==='scramble'||S.game==='missing'){return renderGamesD();}
+  // Render just the game card, not the full section wrapper
+  if(S.game==='scramble'||S.game==='missing'){
+    const tempW=renderGamesD();
+    // renderGamesD returns a div with back btn + card; extract just the game card (second child)
+    const children=Array.from(tempW.children);
+    children.forEach((c,i)=>{if(i>0)w.appendChild(c);});
+  }
   return w;
 }
 
