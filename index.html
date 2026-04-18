@@ -147,6 +147,7 @@ function playWord(w){speak(w,0.75);}
 function addStars(n){S.stars+=n;const msgs=S.user==='divisha'?MSGS_D:MSGS_V;S.encouragement=msgs[Math.floor(Math.random()*msgs.length)];save();render();setTimeout(()=>{S.encouragement='';render();},3500);}
 function markDone(id){if(!S.completedLessons.includes(id)){S.completedLessons.push(id);addStars(5);save();}}
 function scrambleW(w){let a=w.split('');for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}const r=a.join('');return r===w?scrambleW(w):r;}
+function shuffleInPlace(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}}
 
 function h(tag,attrs,...ch){const el=document.createElement(tag);if(attrs)for(const[k,v]of Object.entries(attrs)){if(k==='style'&&typeof v==='object')Object.assign(el.style,v);else if(k.startsWith('on'))el.addEventListener(k.slice(2).toLowerCase(),v);else if(k==='className')el.className=v;else if(k==='innerHTML'){el.innerHTML=v;}else if(k==='disabled'){if(v)el.disabled=true;else el.removeAttribute('disabled');}else if(k==='value'){el.value=v;el.setAttribute('value',v);}else if(k==='placeholder')el.placeholder=v;else if(k==='autofocus'&&v)setTimeout(()=>{el.focus();if(typeof el.selectionStart==='number'){const len=el.value.length;el.selectionStart=len;el.selectionEnd=len;}},60);else el.setAttribute(k,v);}for(const c of ch){if(c==null)continue;if(typeof c==='string'||typeof c==='number')el.appendChild(document.createTextNode(c));else if(Array.isArray(c))c.forEach(x=>{if(x)el.appendChild(x);});else el.appendChild(c);}return el;}
 
@@ -207,9 +208,9 @@ const PARAGRAPHS=[
   {text:'Tommorow we are going on an advenchure to the mountins. We need to take warm clothes becoz the temprature will be low. My father told us to be carefull and not clime the steep rocks.',errors:{'Tommorow':'Tomorrow','advenchure':'adventure','mountins':'mountains','becoz':'because','temprature':'temperature','carefull':'careful','clime':'climb'}},
 ];
 
-const SCRAMBLE_WDS=[{word:'beautiful',hint:'Very pretty'},{word:'friend',hint:'Someone you care about'},{word:'library',hint:'Place with books'},{word:'science',hint:'Study of nature'},{word:'because',hint:'Giving a reason'},{word:'surprise',hint:'Unexpected!'},{word:'chocolate',hint:'Sweet brown treat'},{word:'adventure',hint:'Exciting journey'},{word:'knowledge',hint:'What you know'},{word:'together',hint:'With each other'}];
-const MISSING_WDS=[{word:'beautiful',m:[0,4,7]},{word:'surprise',m:[0,3,6]},{word:'wednesday',m:[0,3,6]},{word:'library',m:[2,4]},{word:'because',m:[0,3,5]},{word:'environment',m:[2,5,8]},{word:'knowledge',m:[0,4,7]},{word:'interesting',m:[2,5,8]}];
-const BUILDER_CH=[{base:'happy',pre:'un',suf:'ness',res:'unhappiness',note:'un+happy(y→i)+ness'},{base:'write',pre:'re',suf:'ing',res:'rewriting',note:'re+write(drop e)+ing'},{base:'care',pre:'',suf:'ful',res:'careful',note:'care+ful(keep e)'},{base:'agree',pre:'dis',suf:'ment',res:'disagreement',note:'dis+agree+ment'},{base:'beauty',pre:'',suf:'ful',res:'beautiful',note:'beauty(y→i)+ful'},{base:'possible',pre:'im',suf:'',res:'impossible',note:'im+possible'},{base:'kind',pre:'un',suf:'ness',res:'unkindness',note:'un+kind+ness'}];
+const SCRAMBLE_WDS=[{word:'beautiful',hint:'Very pretty'},{word:'friend',hint:'Someone you care about'},{word:'library',hint:'Place with books'},{word:'science',hint:'Study of nature'},{word:'because',hint:'Giving a reason'},{word:'surprise',hint:'Unexpected!'},{word:'chocolate',hint:'Sweet brown treat'},{word:'adventure',hint:'Exciting journey'},{word:'knowledge',hint:'What you know'},{word:'together',hint:'With each other'},{word:'dinosaur',hint:'Extinct reptile'},{word:'astronaut',hint:'Travels in space'},{word:'telescope',hint:'Used to see stars'},{word:'bicycle',hint:'Two-wheeled ride'},{word:'mountain',hint:'Very high hill'},{word:'elephant',hint:'Large animal with trunk'},{word:'butterfly',hint:'Colorful flying insect'},{word:'computer',hint:'Electronic machine'},{word:'telephone',hint:'Device to call people'},{word:'umbrella',hint:'Keeps you dry'},{word:'holiday',hint:'Time off from school'},{word:'treasure',hint:'Valuable hidden items'},{word:'vegetable',hint:'Healthy green food'},{word:'dangerous',hint:'Not safe'},{word:'important',hint:'Very significant'},{word:'favourite',hint:'The one you like most'},{word:'restaurant',hint:'Place to eat out'},{word:'tomorrow',hint:'The day after today'},{word:'yesterday',hint:'The day before today'},{word:'different',hint:'Not the same'},{word:'excellent',hint:'Very good!'},{word:'celebrate',hint:'To have a party'},{word:'language',hint:'Words we speak'},{word:'remember',hint:'Not forget'},{word:'discover',hint:'Find something new'}];
+const MISSING_WDS=[{word:'beautiful',m:[0,4,7]},{word:'surprise',m:[0,3,6]},{word:'wednesday',m:[0,3,6]},{word:'library',m:[2,4]},{word:'because',m:[0,3,5]},{word:'environment',m:[2,5,8]},{word:'knowledge',m:[0,4,7]},{word:'interesting',m:[2,5,8]},{word:'dinosaur',m:[1,4]},{word:'astronaut',m:[0,4,7]},{word:'telescope',m:[2,5]},{word:'bicycle',m:[1,4]},{word:'mountain',m:[2,5]},{word:'elephant',m:[0,4]},{word:'butterfly',m:[1,4,7]},{word:'computer',m:[2,5]},{word:'telephone',m:[1,4,7]},{word:'umbrella',m:[0,4,7]},{word:'holiday',m:[1,4]},{word:'treasure',m:[1,4]},{word:'vegetable',m:[2,5,7]},{word:'dangerous',m:[1,4,7]},{word:'important',m:[0,4,7]},{word:'favourite',m:[1,4,7]},{word:'restaurant',m:[2,5,8]},{word:'tomorrow',m:[1,4,7]},{word:'yesterday',m:[1,4,7]},{word:'different',m:[1,4,7]},{word:'excellent',m:[2,5]},{word:'celebrate',m:[1,4]},{word:'language',m:[1,4,7]},{word:'remember',m:[1,4,7]},{word:'discover',m:[1,4]}];
+const BUILDER_CH=[{base:'happy',pre:'un',suf:'ness',res:'unhappiness',note:'un+happy(y→i)+ness'},{base:'write',pre:'re',suf:'ing',res:'rewriting',note:'re+write(drop e)+ing'},{base:'care',pre:'',suf:'ful',res:'careful',note:'care+ful(keep e)'},{base:'agree',pre:'dis',suf:'ment',res:'disagreement',note:'dis+agree+ment'},{base:'beauty',pre:'',suf:'ful',res:'beautiful',note:'beauty(y→i)+ful'},{base:'possible',pre:'im',suf:'',res:'impossible',note:'im+possible'},{base:'kind',pre:'un',suf:'ness',res:'unkindness',note:'un+kind+ness'},{base:'use',pre:'re',suf:'able',res:'reusable',note:'re+use(drop e)+able'},{base:'play',pre:'',suf:'ful',res:'playful',note:'play+ful'},{base:'friend',pre:'un',suf:'ly',res:'unfriendly',note:'un+friend+ly'},{base:'courage',pre:'en',suf:'ment',res:'encouragement',note:'en+courage+ment'},{base:'cover',pre:'dis',suf:'ed',res:'discovered',note:'dis+cover+ed'}];
 
 // ── DEVATV DATA ──
 const READING_PASSAGES=[
@@ -222,6 +223,43 @@ const READING_PASSAGES=[
   {title:'The Magic Paintbrush',text:'A young girl named Meera loved to draw. One day, an old woman gave her a magic paintbrush. Whatever Meera painted became real! She painted food for hungry people, warm clothes for cold children, and a bridge for her village.\n\nBut Meera was careful. She never painted things just for herself. She always used her gift to help others. The people of her village were very grateful and proud of her.',
     questions:[{q:'What was special about the paintbrush?',opts:['It glowed','Paintings became real','It was very big','It could fly'],ans:1},{q:'What did Meera paint for hungry people?',opts:['Money','A house','Food','Toys'],ans:2},{q:'Why were the villagers proud?',opts:['She was rich','She helped everyone','She was a good artist','She was famous'],ans:1}],
     timer:150},
+];
+
+const LEVEL_2_PASSAGES=[
+  {
+    title:'Alice in Wonderland: Chapter 1',
+    text:"Alice was beginning to get very tired of sitting by her sister on the bank, and of having nothing to do: once or twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it, 'and what is the use of a book,' thought Alice 'without pictures or conversation?'\n\nSo she was considering in her own mind, whether the pleasure of making a daisy-chain would be worth the trouble of getting up and picking the daisies, when suddenly a White Rabbit with pink eyes ran close by her.\n\nThere was nothing so VERY remarkable in that; nor did Alice think it so VERY much out of the way to hear the Rabbit say to itself, 'Oh dear! Oh dear! I shall be late!'; but when the Rabbit actually TOOK A WATCH OUT OF ITS WAISTCOAT-POCKET, and looked at it, and then hurried on, Alice started to her feet. She had never before seen a rabbit with either a waistcoat-pocket, or a watch to take out of it, and burning with curiosity, she ran across the field after it, and fortunately was just in time to see it pop down a large rabbit-hole under the hedge.\n\nIn another moment down went Alice after it, never once considering how in the world she was to get out again.\n\nThe rabbit-hole went straight on like a tunnel for some way, and then dipped suddenly down, so suddenly that Alice had not a moment to think about stopping herself before she found herself falling down a very deep well.\n\nEither the well was very deep, or she fell very slowly, for she had plenty of time as she went down to look about her and to wonder what was going to happen next. First, she tried to look down and make out what she was coming to, but it was too dark to see anything; then she looked at the sides of the well, and noticed that they were filled with cupboards and book-shelves; here and there she saw maps and pictures hung upon pegs. She took down a jar from one of the shelves as she passed; it was labelled 'ORANGE MARMALADE', but to her great disappointment it was empty: she did not like to drop the jar for fear of killing somebody, so managed to put it into one of the cupboards as she fell past it.\n\nDown, down, down. Would the fall NEVER come to an end! 'I wonder how many miles I've fallen by this time?' she said aloud. 'I must be getting somewhere near the centre of the earth.'",
+    questions:[
+      {q:'What made Alice run after the White Rabbit?',opts:['It spoke to her','It was wearing a waistcoat and had a pocket watch','It stole her book','She wanted to catch it'],ans:1},
+      {q:'What did Alice find on a shelf as she was falling?',opts:['A book','A map','A jar of orange marmalade','A lantern'],ans:2},
+      {q:'Why didn\'t Alice drop the empty jar?',opts:['She wanted to keep it','She was afraid of breaking it','She was afraid of hurting somebody below','She forgot she was holding it'],ans:2},
+      {q:'Where did Alice think she was falling towards?',opts:['The ocean','The centre of the earth','The moon','A castle'],ans:1}
+    ],
+    timer:600
+  },
+  {
+    title:'Alice in Wonderland: Chapter 2',
+    text:"'Curiouser and curiouser!' cried Alice (she was so much surprised, that for the moment she quite forgot how to speak good English); 'now I'm opening out like the largest telescope that ever was! Good-bye, feet!' (for when she looked down at her feet, they seemed to be almost out of sight, they were getting so far off). 'Oh, my poor little feet, I wonder who will put on your shoes and stockings for you now, dears? I'm sure I shan't be able!'\n\nJust then her head struck against the roof of the hall: in fact she was now more than nine feet high, and she at once took up the little golden key and hurried off to the garden door.\n\nPoor Alice! It was as much as she could do, lying down on one side, to look through into the garden with one eye; but to get through was more hopeless than ever: she sat down and began to cry again.\n\n'You ought to be ashamed of yourself,' said Alice, 'a great girl like you, to go on crying in this way! Stop this moment, I tell you!' But she went on all the same, shedding gallons of tears, until there was a large pool all round her, about four inches deep and reaching half down the hall.\n\nAfter a time she heard a little pattering of feet in the distance, and she hastily dried her eyes to see what was coming. It was the White Rabbit returning, splendidly dressed, with a pair of white kid gloves in one hand and a large fan in the other: he came trotting along in a great hurry, muttering to himself as he came, 'Oh! the Duchess, the Duchess! Oh! won't she be savage if I've kept her waiting!' Alice felt so desperate that she was ready to ask help of any one; so, when the Rabbit came near her, she began, in a low, timid voice, 'If you please, sir—' The Rabbit started violently, dropped the white kid gloves and the fan, and skurried away into the darkness as hard as he could go.",
+    questions:[
+      {q:'What strange thing happens to Alice at the beginning of the passage?',opts:['She turns into a rabbit','She shrinks to the size of a mouse','She grows extremely tall','She becomes invisible'],ans:2},
+      {q:'What does the White Rabbit drop when Alice speaks to him?',opts:['A pocket watch','White kid gloves and a fan','A golden key','A jar of marmalade'],ans:1},
+      {q:'Why does Alice start to cry a pool of tears?',opts:['She lost her cat','The Rabbit yelled at her','She was too large to fit through the door','She dropped the golden key'],ans:2},
+      {q:'Who was the White Rabbit afraid of keeping waiting?',opts:['Alice','The King','The Duchess','Dinah the cat'],ans:2}
+    ],
+    timer:600
+  },
+  {
+    title:'Alice in Wonderland: Chapter 3',
+    text:"They were indeed a queer-looking party that assembled on the bank—the birds with draggled feathers, the animals with their fur clinging close to them, and all dripping wet, cross, and uncomfortable.\n\nThe first question of course was, how to get dry again: they had a consultation about this, and after a few minutes it seemed quite natural to Alice to find herself talking familiarly with them, as if she had known them all her life.\n\nAt last the Mouse, who seemed to be a person of authority among them, called out, 'Sit down, all of you, and listen to me! I'll soon make you dry enough!' They all sat down at once, in a large ring, with the Mouse in the middle. Alice kept her eyes anxiously fixed on it, for she felt sure she would catch a bad cold if she did not get dry very soon.\n\nThe Mouse began reading a very boring and difficult history lesson about William the Conqueror, believing that a 'dry' story would physically dry them off. However, this did not work at all.\n\n'In that case,' said the Dodo solemnly, rising to its feet, 'the best thing to get us dry would be a Caucus-race.'\n\n'What IS a Caucus-race?' said Alice.\n\n'Why,' said the Dodo, 'the best way to explain it is to do it.' First it marked out a race-course, in a sort of circle, and then all the party were placed along the course, here and there. There was no 'One, two, three, and away,' but they began running when they liked, and left off when they liked, so that it was not easy to know when the race was over. However, when they had been running half an hour or so, and were quite dry again, the Dodo suddenly called out 'The race is over!' and they all crowded round it, panting, and asking, 'But who has won?'\n\nThis question the Dodo could not answer without a great deal of thought. At last the Dodo said, 'EVERYBODY has won, and all must have prizes.'\n\n'But who is to give the prizes?' quite a chorus of voices asked.\n\n'Why, SHE, of course,' said the Dodo, pointing to Alice with one finger; and the whole party at once crowded round her, calling out in a confused way, 'Prizes! Prizes!'\n\nAlice had no idea what to do, and in despair she put her hand in her pocket, and pulled out a box of comfits (candies), and handed them round as prizes. There was exactly one a-piece all round.",
+    questions:[
+      {q:'Why were Alice and the animals wet?',opts:['They fell in a river','It was raining','They had been swimming in Alice\'s pool of tears','They were taking a bath'],ans:2},
+      {q:'How does the Mouse try to dry everyone off?',opts:['By building a fire','By reading a very "dry" and boring history lesson','By giving them towels','By blowing hot air'],ans:1},
+      {q:'What is strange about the Caucus-race?',opts:['There is no starting line and no winner','Everyone runs backward','They ride bicycles','The Dodo cheats'],ans:0},
+      {q:'Who won the Caucus-race?',opts:['The Mouse','Alice','The Dodo','Everybody'],ans:3},
+      {q:'What did Alice give out as prizes?',opts:['Comfits (candies)','Thimbles','Gold coins','Feathers'],ans:0}
+    ],
+    timer:600
+  }
 ];
 
 const WRITING_PROMPTS=[
@@ -299,7 +337,7 @@ function renderLogin(){
   const grid=h('div',{style:{display:'flex',gap:24,justifyContent:'center',flexWrap:'wrap'}});
 
   // Divisha
-  const d=h('button',{className:'avatar-btn',onClick:()=>{S.user='divisha';S.section='home';load();render();}});
+  const d=h('button',{className:'avatar-btn',onClick:()=>{S.user='divisha';S.section='home';load();shuffleInPlace(SCRAMBLE_WDS);shuffleInPlace(MISSING_WDS);shuffleInPlace(BUILDER_CH);shuffleInPlace(PARAGRAPHS);render();}});
   d.appendChild(h('div',{className:'avatar-circle',style:{background:'linear-gradient(135deg,#FF6B9D,#C44DFF)'}},'D'));
   d.appendChild(h('div',{style:{fontFamily:'var(--font-display)',fontWeight:800,fontSize:20,color:'#FF6B9D'}},'Divisha'));
   d.appendChild(h('div',{style:{fontSize:13,color:'var(--text-muted)'}},'Class 5'));
@@ -635,10 +673,54 @@ function renderGamesD(){
 
 // ── READING ──
 function renderReading(){
-  const w=h('div',{});w.appendChild(h('h2',{style:{fontFamily:'var(--font-display)',fontSize:26,color:'var(--sky)',marginBottom:4}},'📖 Reading Time'));
-  w.appendChild(h('p',{style:{color:'var(--text-light)',marginBottom:20}},'Read the story carefully, then answer questions! A timer tracks your reading focus.'));
+  const w=h('div',{});
+  
+  const headerRow=h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20,flexWrap:'wrap',gap:12}});
+  headerRow.appendChild(h('div',{},
+    h('h2',{style:{fontFamily:'var(--font-display)',fontSize:26,color:'var(--sky)',marginBottom:4}},'📖 Reading Time'),
+    h('p',{style:{color:'var(--text-light)'}},'Read the story carefully, then answer questions!')
+  ));
+  
+  S.dReadLevel = S.dReadLevel || 1;
+  const levelToggles=h('div',{style:{display:'flex',gap:8,background:'#F1F5F9',padding:4,borderRadius:12}});
+  levelToggles.appendChild(h('button',{className:'btn',style:{background:S.dReadLevel===1?'#fff':'transparent',color:S.dReadLevel===1?'var(--sky)':'#64748B',boxShadow:S.dReadLevel===1?'0 2px 4px rgba(0,0,0,0.05)':'none',padding:'6px 12px'},onClick:()=>{S.dReadLevel=1;S.dReadI=0;S.dReadPhase='read';render();}},'Level 1'));
+  levelToggles.appendChild(h('button',{className:'btn',style:{background:S.dReadLevel===2?'#fff':'transparent',color:S.dReadLevel===2?'var(--sky)':'#64748B',boxShadow:S.dReadLevel===2?'0 2px 4px rgba(0,0,0,0.05)':'none',padding:'6px 12px'},onClick:()=>{S.dReadLevel=2;S.dReadI=0;S.dReadPhase='read';render();}},'Level 2'));
+  headerRow.appendChild(levelToggles);
+  w.appendChild(headerRow);
+  
+  // Free Libraries Hub button
+  w.appendChild(h('div',{className:'card',style:{background:'linear-gradient(135deg,#F0F9FF,#E0F2FE)',border:'2px solid #BAE6FD',marginBottom:20,padding:16,display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:12}},
+    h('div',{},
+      h('h3',{style:{fontFamily:'var(--font-display)',fontSize:18,color:'#0369A1',marginBottom:4}},'📚 Endless Free Libraries'),
+      h('div',{style:{fontSize:13,color:'#0C4A6E'}},'Discover thousands of free kids books online!')
+    ),
+    h('button',{className:'btn',style:{background:'#0284C7',color:'#fff'},onClick:()=>{S.showLibraries=true;render();}},'Explore Libraries ➔')
+  ));
 
-  const passage=READING_PASSAGES[S.dReadI];
+  if(S.showLibraries) {
+    const libW=h('div',{className:'card',style:{border:'2px solid #38BDF8',marginBottom:20}});
+    libW.appendChild(h('div',{style:{display:'flex',justifyContent:'space-between',marginBottom:16,alignItems:'center'}},
+      h('h3',{style:{fontFamily:'var(--font-display)',fontSize:20,color:'var(--sky)'}},'🌍 Free Digital Libraries'),
+      h('button',{className:'btn btn-ghost',onClick:()=>{S.showLibraries=false;render();}},'✖ Close')
+    ));
+    const libGrid=h('div',{style:{display:'grid',gap:12}});
+    
+    [{name:'StoryWeaver',desc:'Thousands of free stories in multiple reading levels.',url:'https://storyweaver.org.in/en/read'},
+     {name:'Oxford Owl',desc:'Free eBook library for kids with phonics and stories.',url:'https://www.oxfordowl.co.uk/for-home/find-a-book/library-page/'},
+     {name:'Project Gutenberg',desc:'Classic children\'s literature in the public domain.',url:'https://www.gutenberg.org/ebooks/bookshelf/16'}].forEach(l=>{
+      const a=document.createElement('a');
+      a.href=l.url; a.target='_blank'; a.style.textDecoration='none';
+      a.className='card card-btn'; a.style.background='#F8FAFC'; a.style.border='1px solid #E2E8F0';
+      a.appendChild(h('div',{style:{fontWeight:800,fontSize:16,color:'#0284C7'}},l.name));
+      a.appendChild(h('div',{style:{fontSize:13,color:'#64748B',marginTop:4}},l.desc));
+      libGrid.appendChild(a);
+    });
+    libW.appendChild(libGrid);
+    w.appendChild(libW);
+  }
+
+  const passagesList = S.dReadLevel === 2 ? LEVEL_2_PASSAGES : READING_PASSAGES;
+  const passage=passagesList[S.dReadI];
   if(S.dReadPhase==='read'){
     const card=h('div',{className:'card',style:{border:'2px solid #7DD3FC',marginBottom:20}});
     card.appendChild(h('h3',{style:{fontFamily:'var(--font-display)',fontSize:22,color:'var(--sky)',marginBottom:12}},`📖 ${passage.title}`));
