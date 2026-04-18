@@ -126,7 +126,7 @@ const USERS={
 
 // ── PERSISTENCE ──
 function save(){try{const k=S.user;localStorage.setItem(`ea_${k}_stars`,S.stars);localStorage.setItem(`ea_${k}_lessons`,JSON.stringify(S.completedLessons));}catch(e){}}
-function load(){try{const k=S.user;const s=localStorage.getItem(`ea_${k}_stars`);const l=localStorage.getItem(`ea_${k}_lessons`);if(s)S.stars=parseInt(s)||0;if(l)S.completedLessons=JSON.parse(l)||[];}catch(e){}}
+function load(){try{const k=S.user;const s=localStorage.getItem(`ea_${k}_stars`);const l=localStorage.getItem(`ea_${k}_lessons`);S.stars=s?parseInt(s)||0:0;S.completedLessons=l?JSON.parse(l)||[]:[];}catch(e){S.stars=0;S.completedLessons=[];}}
 
 // ── HELPERS ──
 const MSGS_D=["You're doing amazing, Divisha! 🌟","Mistakes help us learn! Keep going! 💪","Your brain is building new connections! 🧠","You're becoming a spelling champion! 🏆","Practice makes progress! 🌈"];
@@ -148,7 +148,7 @@ function addStars(n){S.stars+=n;const msgs=S.user==='divisha'?MSGS_D:MSGS_V;S.en
 function markDone(id){if(!S.completedLessons.includes(id)){S.completedLessons.push(id);addStars(5);save();}}
 function scrambleW(w){let a=w.split('');for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}const r=a.join('');return r===w?scrambleW(w):r;}
 
-function h(tag,attrs,...ch){const el=document.createElement(tag);if(attrs)for(const[k,v]of Object.entries(attrs)){if(k==='style'&&typeof v==='object')Object.assign(el.style,v);else if(k.startsWith('on'))el.addEventListener(k.slice(2).toLowerCase(),v);else if(k==='className')el.className=v;else if(k==='innerHTML'){el.innerHTML=v;}else if(k==='disabled'&&v)el.disabled=true;else if(k==='value'){el.value=v;el.setAttribute('value',v);}else if(k==='placeholder')el.placeholder=v;else if(k==='autofocus'&&v)setTimeout(()=>{el.focus();if(typeof el.selectionStart==='number'){const len=el.value.length;el.selectionStart=len;el.selectionEnd=len;}},60);else el.setAttribute(k,v);}for(const c of ch){if(c==null)continue;if(typeof c==='string'||typeof c==='number')el.appendChild(document.createTextNode(c));else if(Array.isArray(c))c.forEach(x=>{if(x)el.appendChild(x);});else el.appendChild(c);}return el;}
+function h(tag,attrs,...ch){const el=document.createElement(tag);if(attrs)for(const[k,v]of Object.entries(attrs)){if(k==='style'&&typeof v==='object')Object.assign(el.style,v);else if(k.startsWith('on'))el.addEventListener(k.slice(2).toLowerCase(),v);else if(k==='className')el.className=v;else if(k==='innerHTML'){el.innerHTML=v;}else if(k==='disabled'){if(v)el.disabled=true;else el.removeAttribute('disabled');}else if(k==='value'){el.value=v;el.setAttribute('value',v);}else if(k==='placeholder')el.placeholder=v;else if(k==='autofocus'&&v)setTimeout(()=>{el.focus();if(typeof el.selectionStart==='number'){const len=el.value.length;el.selectionStart=len;el.selectionEnd=len;}},60);else el.setAttribute(k,v);}for(const c of ch){if(c==null)continue;if(typeof c==='string'||typeof c==='number')el.appendChild(document.createTextNode(c));else if(Array.isArray(c))c.forEach(x=>{if(x)el.appendChild(x);});else el.appendChild(c);}return el;}
 
 // ═══════════════════════════════════════════════
 // ALL DATA
@@ -299,7 +299,7 @@ function renderLogin(){
   const grid=h('div',{style:{display:'flex',gap:24,justifyContent:'center',flexWrap:'wrap'}});
 
   // Divisha
-  const d=h('button',{className:'avatar-btn',onClick:()=>{S.user='divisha';S.section='home';S.stars=0;S.completedLessons=[];load();render();}});
+  const d=h('button',{className:'avatar-btn',onClick:()=>{S.user='divisha';S.section='home';load();render();}});
   d.appendChild(h('div',{className:'avatar-circle',style:{background:'linear-gradient(135deg,#FF6B9D,#C44DFF)'}},'D'));
   d.appendChild(h('div',{style:{fontFamily:'var(--font-display)',fontWeight:800,fontSize:20,color:'#FF6B9D'}},'Divisha'));
   d.appendChild(h('div',{style:{fontSize:13,color:'var(--text-muted)'}},'Class 5'));
@@ -307,7 +307,7 @@ function renderLogin(){
   grid.appendChild(d);
 
   // Devatv
-  const v=h('button',{className:'avatar-btn',onClick:()=>{S.user='devatv';S.section='home';S.stars=0;S.completedLessons=[];load();render();}});
+  const v=h('button',{className:'avatar-btn',onClick:()=>{S.user='devatv';S.section='home';load();render();}});
   v.appendChild(h('div',{className:'avatar-circle',style:{background:'linear-gradient(135deg,#38BDF8,#06B6D4)'}},'De'));
   v.appendChild(h('div',{style:{fontFamily:'var(--font-display)',fontWeight:800,fontSize:20,color:'#06B6D4'}},'Devatv'));
   v.appendChild(h('div',{style:{fontSize:13,color:'var(--text-muted)'}},'Class 2'));
