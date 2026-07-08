@@ -24,6 +24,13 @@
     @keyframes blink{50%{border-color:transparent}}
     .card{background:var(--card-bg);border-radius:20px;padding:24px;box-shadow:0 4px 20px rgba(0,0,0,.06);border:2px solid transparent;transition:all .3s ease}
     .card:hover{box-shadow:0 8px 30px rgba(0,0,0,.1)}
+    .game-card{background:var(--card-bg);border-radius:24px;padding:32px;box-shadow:0 10px 40px rgba(0,0,0,.08);border:4px solid var(--border);text-align:center;position:relative;overflow:hidden;margin-bottom:20px}
+    .game-card::before{content:'';position:absolute;top:0;left:0;right:0;height:8px;background:linear-gradient(90deg,var(--pink),var(--purple),var(--sky),var(--cyan))}
+    .btn-opt{width:100%;padding:16px 20px;border-radius:16px;border:2px solid var(--border);background:#F8FAFC;font-family:var(--font-body);font-size:16px;font-weight:700;color:var(--text);cursor:pointer;transition:all .2s ease;text-align:left;display:flex;align-items:center}
+    .btn-opt:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 15px rgba(0,0,0,.05);border-color:var(--violet)}
+    .btn-opt.correct{background:#D1FAE5;border-color:#10B981;color:#047857}
+    .btn-opt.wrong{background:#FEE2E2;border-color:#EF4444;color:#B91C1C}
+    .badge-tag{padding:6px 12px;border-radius:20px;font-size:13px;font-weight:800;background:#F1F5F9;color:var(--text-light);display:inline-block;margin-bottom:12px}
     .card-btn{cursor:pointer;text-align:left;width:100%;border:none;font-family:var(--font-body)}
     .card-btn:hover{transform:translateY(-2px)}
     .btn{padding:10px 20px;border-radius:12px;border:none;font-family:var(--font-body);font-weight:700;font-size:15px;cursor:pointer;transition:all .2s ease;display:inline-flex;align-items:center;justify-content:center;gap:6px;-webkit-tap-highlight-color:transparent}
@@ -101,6 +108,16 @@ let S={user:null,section:'home',stars:0,completedLessons:[],sidebarOpen:false,en
   dFocusGame:null,dFocusI:0,dFocusFB:null,dFocusSeq:[],dFocusUserSeq:[],dFocusPhase:'watch',
   dFocusTimer:0,dFocusTimerActive:false,dFocusTimerInterval:null,
   dMemCards:[],dMemFlipped:[],dMemMatched:[],dMemMoves:0,
+  // grammar
+  grI:0,grPhase:'learn',grScore:0,grTotal:0,grFB:null,grTyped:'',
+  // spellbee
+  sbWords:[],sbI:0,sbScore:0,sbFB:null,sbTyped:'',sbLoading:false,sbMode:'setup',sbOptions:{},
+  // math
+  mQ:'',mAns:'',mFB:null,mScore:0,mTotal:0,mPhase:'setup',mTyped:'',mTimer:0,mTimerActive:false,mInterval:null,
+  // maps
+  mapT:null,mapQ:null,mapOpts:[],mapFB:null,mapScore:0,mapI:0,mapData:[],mapLoading:false,
+  // history
+  history:[],
   // certificate
   certOpen:false,
 };
@@ -112,21 +129,26 @@ const USERS={
     sections:[
       {id:'home',label:'Home',icon:'🏠'},{id:'phonics',label:'Sound Lab',icon:'🔊'},{id:'syllables',label:'Syllable Gym',icon:'👏'},
       {id:'rules',label:'Spelling Rules',icon:'📏'},{id:'wordbank',label:'Word Bank',icon:'🏦'},{id:'practice',label:'Practice Arena',icon:'🎯'},
-      {id:'paragraphs',label:'Paragraph Fix',icon:'📝'},{id:'games',label:'Fun Games',icon:'🎮'},{id:'certificate',label:'Certificate',icon:'🏆'},
-      {id:'progress',label:'My Progress',icon:'📊'},
+      {id:'paragraphs',label:'Paragraph Fix',icon:'📝'},{id:'games',label:'Fun Games',icon:'🎮'},
+      {id:'d-reading',label:'Unseen Passages',icon:'📖'},{id:'d-writing',label:'Writing Practice',icon:'✍️'},
+      {id:'grammar',label:'Grammar Class 5',icon:'🧩'},{id:'spellbee',label:'Spell Bee',icon:'🐝'},
+      {id:'certificate',label:'Certificate',icon:'🏆'},{id:'progress',label:'My Progress',icon:'📊'},
     ]},
   devatv:{name:'Devatv',class:2,school:'The Khaitan School, Noida',avatar:'De',color1:'#38BDF8',color2:'#06B6D4',bg:'linear-gradient(135deg,#F0FDFA 0%,#F0F4FF 50%,#FFFBEB 100%)',
     navActive:'active-blue',
     sections:[
       {id:'home',label:'Home',icon:'🏠'},{id:'d-reading',label:'Reading Time',icon:'📖'},{id:'d-writing',label:'Creative Writing',icon:'✍️'},
-      {id:'d-handwriting',label:'Handwriting',icon:'🖊️'},{id:'d-focus',label:'Focus Games',icon:'🧠'},{id:'d-games',label:'Fun Games',icon:'🎮'},
+      {id:'d-handwriting',label:'Handwriting',icon:'🖊️'},{id:'d-focus',label:'Focus Games',icon:'🧠'},
+      {id:'d-math',label:'Fast Math',icon:'🧮'},{id:'d-maps',label:'World Explorer',icon:'🌍'},
+      {id:'d-games',label:'Fun Games',icon:'🎮'},
       {id:'certificate',label:'Certificate',icon:'🏆'},{id:'progress',label:'My Progress',icon:'📊'},
     ]},
 };
 
 // ── PERSISTENCE ──
-function save(){try{const k=S.user;localStorage.setItem(`ea_${k}_stars`,S.stars);localStorage.setItem(`ea_${k}_lessons`,JSON.stringify(S.completedLessons));}catch(e){}}
-function load(){try{const k=S.user;const s=localStorage.getItem(`ea_${k}_stars`);const l=localStorage.getItem(`ea_${k}_lessons`);S.stars=s?parseInt(s)||0:0;S.completedLessons=l?JSON.parse(l)||[]:[];}catch(e){S.stars=0;S.completedLessons=[];}}
+// ── PERSISTENCE ──
+function save(){try{const k=S.user;localStorage.setItem(`ea_${k}_stars`,S.stars);localStorage.setItem(`ea_${k}_lessons`,JSON.stringify(S.completedLessons));localStorage.setItem(`ea_${k}_history`,JSON.stringify(S.history||[]));}catch(e){}}
+function load(){try{const k=S.user;const s=localStorage.getItem(`ea_${k}_stars`);const l=localStorage.getItem(`ea_${k}_lessons`);const h=localStorage.getItem(`ea_${k}_history`);S.stars=s?parseInt(s)||0:0;S.completedLessons=l?JSON.parse(l)||[]:[];S.history=h?JSON.parse(h)||[]:[];}catch(e){S.stars=0;S.completedLessons=[];S.history=[];}}
 
 // ── HELPERS ──
 const MSGS_D=["You're doing amazing, Divisha! 🌟","Mistakes help us learn! Keep going! 💪","Your brain is building new connections! 🧠","You're becoming a spelling champion! 🏆","Practice makes progress! 🌈"];
@@ -144,7 +166,7 @@ function playCorrect(){speak('Correct! Great job!',1);}
 function playWrong(){speak('Try again!',1);}
 function playWord(w){speak(w,0.75);}
 
-function addStars(n){S.stars+=n;const msgs=S.user==='divisha'?MSGS_D:MSGS_V;S.encouragement=msgs[Math.floor(Math.random()*msgs.length)];save();render();setTimeout(()=>{S.encouragement='';render();},3500);}
+function addStars(n){S.stars+=n;const msgs=S.user==='divisha'?MSGS_D:MSGS_V;S.encouragement=msgs[Math.floor(Math.random()*msgs.length)];const d=new Date().toISOString().split('T')[0];if(!S.history)S.history=[];S.history.push({date:d,stars:n,sec:S.section});save();render();setTimeout(()=>{S.encouragement='';render();},3500);}
 function markDone(id){if(!S.completedLessons.includes(id)){S.completedLessons.push(id);addStars(5);save();}}
 function scrambleW(w){let a=w.split('');for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}const r=a.join('');return r===w?scrambleW(w):r;}
 function shuffleInPlace(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}}
@@ -211,6 +233,25 @@ const PARAGRAPHS=[
 const SCRAMBLE_WDS=[{word:'beautiful',hint:'Very pretty'},{word:'friend',hint:'Someone you care about'},{word:'library',hint:'Place with books'},{word:'science',hint:'Study of nature'},{word:'because',hint:'Giving a reason'},{word:'surprise',hint:'Unexpected!'},{word:'chocolate',hint:'Sweet brown treat'},{word:'adventure',hint:'Exciting journey'},{word:'knowledge',hint:'What you know'},{word:'together',hint:'With each other'},{word:'dinosaur',hint:'Extinct reptile'},{word:'astronaut',hint:'Travels in space'},{word:'telescope',hint:'Used to see stars'},{word:'bicycle',hint:'Two-wheeled ride'},{word:'mountain',hint:'Very high hill'},{word:'elephant',hint:'Large animal with trunk'},{word:'butterfly',hint:'Colorful flying insect'},{word:'computer',hint:'Electronic machine'},{word:'telephone',hint:'Device to call people'},{word:'umbrella',hint:'Keeps you dry'},{word:'holiday',hint:'Time off from school'},{word:'treasure',hint:'Valuable hidden items'},{word:'vegetable',hint:'Healthy green food'},{word:'dangerous',hint:'Not safe'},{word:'important',hint:'Very significant'},{word:'favourite',hint:'The one you like most'},{word:'restaurant',hint:'Place to eat out'},{word:'tomorrow',hint:'The day after today'},{word:'yesterday',hint:'The day before today'},{word:'different',hint:'Not the same'},{word:'excellent',hint:'Very good!'},{word:'celebrate',hint:'To have a party'},{word:'language',hint:'Words we speak'},{word:'remember',hint:'Not forget'},{word:'discover',hint:'Find something new'}];
 const MISSING_WDS=[{word:'beautiful',m:[0,4,7]},{word:'surprise',m:[0,3,6]},{word:'wednesday',m:[0,3,6]},{word:'library',m:[2,4]},{word:'because',m:[0,3,5]},{word:'environment',m:[2,5,8]},{word:'knowledge',m:[0,4,7]},{word:'interesting',m:[2,5,8]},{word:'dinosaur',m:[1,4]},{word:'astronaut',m:[0,4,7]},{word:'telescope',m:[2,5]},{word:'bicycle',m:[1,4]},{word:'mountain',m:[2,5]},{word:'elephant',m:[0,4]},{word:'butterfly',m:[1,4,7]},{word:'computer',m:[2,5]},{word:'telephone',m:[1,4,7]},{word:'umbrella',m:[0,4,7]},{word:'holiday',m:[1,4]},{word:'treasure',m:[1,4]},{word:'vegetable',m:[2,5,7]},{word:'dangerous',m:[1,4,7]},{word:'important',m:[0,4,7]},{word:'favourite',m:[1,4,7]},{word:'restaurant',m:[2,5,8]},{word:'tomorrow',m:[1,4,7]},{word:'yesterday',m:[1,4,7]},{word:'different',m:[1,4,7]},{word:'excellent',m:[2,5]},{word:'celebrate',m:[1,4]},{word:'language',m:[1,4,7]},{word:'remember',m:[1,4,7]},{word:'discover',m:[1,4]}];
 const BUILDER_CH=[{base:'happy',pre:'un',suf:'ness',res:'unhappiness',note:'un+happy(y→i)+ness'},{base:'write',pre:'re',suf:'ing',res:'rewriting',note:'re+write(drop e)+ing'},{base:'care',pre:'',suf:'ful',res:'careful',note:'care+ful(keep e)'},{base:'agree',pre:'dis',suf:'ment',res:'disagreement',note:'dis+agree+ment'},{base:'beauty',pre:'',suf:'ful',res:'beautiful',note:'beauty(y→i)+ful'},{base:'possible',pre:'im',suf:'',res:'impossible',note:'im+possible'},{base:'kind',pre:'un',suf:'ness',res:'unkindness',note:'un+kind+ness'},{base:'use',pre:'re',suf:'able',res:'reusable',note:'re+use(drop e)+able'},{base:'play',pre:'',suf:'ful',res:'playful',note:'play+ful'},{base:'friend',pre:'un',suf:'ly',res:'unfriendly',note:'un+friend+ly'},{base:'courage',pre:'en',suf:'ment',res:'encouragement',note:'en+courage+ment'},{base:'cover',pre:'dis',suf:'ed',res:'discovered',note:'dis+cover+ed'}];
+
+const GRAMMAR_LESSONS=[
+  {id:'nouns',title:'Nouns & Pronouns',icon:'👤',desc:'Names and replacements!',color:'#3B82F6',
+    learn:'A NOUN is a person, place, thing, or idea. A PRONOUN takes its place (he, she, it, they).',
+    quiz:[{q:'Which word is a noun in "The dog ran fast"?',ans:'dog',opts:['The','dog','ran','fast']},{q:'Which is a pronoun?',ans:'They',opts:['Book','They','Jump','Happy']}]
+  },
+  {id:'verbs',title:'Verbs & Tenses',icon:'🏃',desc:'Action words and time!',color:'#EF4444',
+    learn:'VERBS show action. TENSE shows when: Past (walked), Present (walks), Future (will walk).',
+    quiz:[{q:'What is the past tense of "run"?',ans:'ran',opts:['runned','ran','running','runs']},{q:'Find the verb: "She sings beautifully."',ans:'sings',opts:['She','sings','beautifully','None']}]
+  },
+  {id:'adj_adv',title:'Adjectives & Adverbs',icon:'✨',desc:'Describing words!',color:'#10B981',
+    learn:'ADJECTIVES describe nouns (the RED car). ADVERBS describe verbs, often ending in -ly (ran QUICKLY).',
+    quiz:[{q:'Which is an adverb in "He speaks softly"?',ans:'softly',opts:['He','speaks','softly','None']},{q:'Which is an adjective in "A huge elephant"?',ans:'huge',opts:['A','huge','elephant','None']}]
+  },
+  {id:'preps',title:'Prepositions',icon:'📍',desc:'Position and time!',color:'#F59E0B',
+    learn:'PREPOSITIONS show position or time (IN the box, ON the table, AT noon).',
+    quiz:[{q:'Find the preposition: "The cat is under the bed."',ans:'under',opts:['cat','is','under','bed']},{q:'Which word is NOT a preposition?',ans:'run',opts:['in','on','run','over']}]
+  }
+];
 
 // ── DEVATV DATA ──
 const READING_PASSAGES=[
@@ -314,10 +355,14 @@ function render(){
   else if(sec==='practice') main.appendChild(renderPractice());
   else if(sec==='paragraphs') main.appendChild(renderParagraphs());
   else if(sec==='games') main.appendChild(S.user==='divisha'?renderGamesD():renderGamesV());
+  else if(sec==='grammar') main.appendChild(renderGrammar());
+  else if(sec==='spellbee') main.appendChild(renderSpellBee());
   else if(sec==='d-reading') main.appendChild(renderReading());
   else if(sec==='d-writing') main.appendChild(renderWriting());
   else if(sec==='d-handwriting') main.appendChild(renderHandwriting());
   else if(sec==='d-focus') main.appendChild(renderFocus());
+  else if(sec==='d-math') main.appendChild(renderMath());
+  else if(sec==='d-maps') main.appendChild(renderMaps());
   else if(sec==='d-games') main.appendChild(renderGamesV());
   else if(sec==='certificate') main.appendChild(renderCertificate());
   else if(sec==='progress') main.appendChild(renderProgress());
@@ -418,7 +463,17 @@ function renderHomeD(){
 
   w.appendChild(h('h2',{style:{fontFamily:'var(--font-display)',fontSize:22,marginBottom:16}},'🗺️ Your Learning Path'));
   const grid=h('div',{style:{display:'grid',gap:12}});
-  [{id:'phonics',icon:'🔊',title:'Sound Lab',desc:'Letter sounds',color:'var(--pink)',n:1},{id:'syllables',icon:'👏',title:'Syllable Gym',desc:'Break words into beats',color:'var(--violet)',n:2},{id:'rules',icon:'📏',title:'Spelling Rules',desc:'8 essential rules',color:'var(--teal)',n:3},{id:'wordbank',icon:'🏦',title:'Word Bank',desc:'65+ words with tricks',color:'var(--amber)',n:4},{id:'practice',icon:'🎯',title:'Practice Arena',desc:'Type from memory',color:'var(--rose)',n:5},{id:'paragraphs',icon:'📝',title:'Paragraph Fix',desc:'Find mistakes',color:'#8B5CF6',n:6},{id:'games',icon:'🎮',title:'Fun Games',desc:'Scramble, Missing, Builder',color:'var(--cyan)',n:7}].forEach((it,i)=>{
+  [{id:'phonics',icon:'🔊',title:'Sound Lab',desc:'Letter sounds',color:'var(--pink)',n:1},
+   {id:'syllables',icon:'👏',title:'Syllable Gym',desc:'Break words into beats',color:'var(--violet)',n:2},
+   {id:'rules',icon:'📏',title:'Spelling Rules',desc:'Visual memory tricks & rules',color:'var(--teal)',n:3},
+   {id:'grammar',icon:'🧩',title:'Grammar',desc:'Parts of speech & tenses',color:'#3B82F6',n:4},
+   {id:'wordbank',icon:'🏦',title:'Word Bank',desc:'65+ words with tricks',color:'var(--amber)',n:5},
+   {id:'spellbee',icon:'🐝',title:'Spell Bee',desc:'Dynamic Spell Bee challenge',color:'#F59E0B',n:6},
+   {id:'practice',icon:'🎯',title:'Practice Arena',desc:'Type from memory',color:'var(--rose)',n:7},
+   {id:'d-reading',icon:'📖',title:'Unseen Passages',desc:'Reading & comprehension',color:'var(--sky)',n:8},
+   {id:'d-writing',icon:'✍️',title:'Writing Practice',desc:'Creative prompts',color:'#8B5CF6',n:9},
+   {id:'paragraphs',icon:'📝',title:'Paragraph Fix',desc:'Find mistakes',color:'#8B5CF6',n:10},
+   {id:'games',icon:'🎮',title:'Fun Games',desc:'Scramble, Missing, Builder',color:'var(--cyan)',n:11}].forEach((it,i)=>{
     const btn=h('button',{className:'card card-btn',style:{display:'flex',alignItems:'center',gap:16,animation:`popIn .4s ease-out ${i*.06}s both`},onClick:()=>{S.section=it.id;render();}});
     btn.appendChild(h('div',{style:{width:50,height:50,borderRadius:14,background:`color-mix(in srgb,${it.color} 12%,transparent)`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:26,flexShrink:0}},it.icon));
     const txt=h('div',{style:{flex:1}});txt.appendChild(h('div',{style:{fontWeight:800,fontSize:15,color:it.color}},`${it.n}. ${it.title}`));txt.appendChild(h('div',{style:{fontSize:13,color:'var(--text-light)',marginTop:2}},it.desc));
@@ -451,12 +506,14 @@ function renderHomeV(){
 
   w.appendChild(h('h2',{style:{fontFamily:'var(--font-display)',fontSize:22,marginBottom:16}},'🗺️ Your Adventure Map'));
   const grid=h('div',{style:{display:'grid',gap:12}});
-  [{id:'d-reading',icon:'📖',title:'Reading Time',desc:'Read stories, answer questions, build focus',color:'var(--sky)',n:1},
-   {id:'d-writing',icon:'✍️',title:'Creative Writing',desc:'Write your own stories and letters!',color:'var(--violet)',n:2},
+  [{id:'d-reading',icon:'📖',title:'Reading Time',desc:'Read stories, answer questions, build focus',color:'var(--sky)',n:1, setup: ()=>{shuffleInPlace(READING_PASSAGES);shuffleInPlace(LEVEL_2_PASSAGES);}},
+   {id:'d-writing',icon:'✍️',title:'Creative Writing',desc:'Write your own stories and letters!',color:'var(--violet)',n:2, setup: ()=>{shuffleInPlace(WRITING_PROMPTS);}},
    {id:'d-handwriting',icon:'🖊️',title:'Handwriting Practice',desc:'Beautiful, neat handwriting exercises',color:'var(--teal)',n:3},
    {id:'d-focus',icon:'🧠',title:'Focus Games',desc:'Train your concentration superpowers!',color:'var(--amber)',n:4},
-   {id:'d-games',icon:'🎮',title:'Fun Games',desc:'Memory match and word games!',color:'var(--cyan)',n:5}].forEach((it,i)=>{
-    const btn=h('button',{className:'card card-btn',style:{display:'flex',alignItems:'center',gap:16,animation:`popIn .4s ease-out ${i*.06}s both`},onClick:()=>{S.section=it.id;render();}});
+   {id:'d-math',icon:'🧮',title:'Fast Math',desc:'Beat the clock in quick calculation!',color:'#EF4444',n:5},
+   {id:'d-maps',icon:'🌍',title:'World Explorer',desc:'Map quizzes for India & the World!',color:'#10B981',n:6},
+   {id:'d-games',icon:'🎮',title:'Fun Games',desc:'Memory match and word games!',color:'var(--cyan)',n:7}].forEach((it,i)=>{
+    const btn=h('button',{className:'card card-btn',style:{display:'flex',alignItems:'center',gap:16,animation:`popIn .4s ease-out ${i*.06}s both`},onClick:()=>{if(it.setup)it.setup();S.section=it.id;render();}});
     btn.appendChild(h('div',{style:{width:50,height:50,borderRadius:14,background:`color-mix(in srgb,${it.color} 12%,transparent)`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:26,flexShrink:0}},it.icon));
     const txt=h('div',{style:{flex:1}});txt.appendChild(h('div',{style:{fontWeight:800,fontSize:15,color:it.color}},`${it.n}. ${it.title}`));txt.appendChild(h('div',{style:{fontSize:13,color:'var(--text-light)',marginTop:2}},it.desc));
     btn.appendChild(txt);btn.appendChild(h('div',{style:{fontSize:18,color:'#CBD5E0'}},S.completedLessons.includes(it.id)?'✅':'→'));grid.appendChild(btn);});
@@ -545,6 +602,47 @@ function renderSyllables(){
 
 function renderRules(){
   const w=h('div',{});w.appendChild(h('h2',{style:{fontFamily:'var(--font-display)',fontSize:26,color:'var(--teal)',marginBottom:4}},'📏 Spelling Rules'));
+  
+  if(S.ruleMatchMode){
+    const q=S.ruleMatchQ[S.ruleMatchI];
+    const card=h('div',{className:'game-card'});
+    card.appendChild(h('div',{className:'badge-tag'},`Match ${S.ruleMatchI+1}/5 • Score: ${S.ruleMatchScore}`));
+    card.appendChild(h('div',{style:{fontSize:48,marginBottom:16}},q.icon));
+    card.appendChild(h('h3',{style:{fontSize:20,color:'#374151',marginBottom:20}},`Which rule does ${q.icon} represent?`));
+    
+    const opts=h('div',{style:{display:'flex',flexDirection:'column',gap:12,marginBottom:16}});
+    S.ruleMatchOptions.forEach(opt=>{
+      let cls='btn-opt';
+      if(S.ruleMatchFB){
+        if(opt.id===q.id) cls+=' correct';
+        else if(opt.id===S.ruleMatchAns) cls+=' wrong';
+      }
+      opts.appendChild(h('button',{className:cls,disabled:!!S.ruleMatchFB,onClick:()=>{
+        S.ruleMatchAns=opt.id;
+        if(opt.id===q.id){S.ruleMatchFB='correct';S.ruleMatchScore++;playCorrect();addStars(2);}
+        else{S.ruleMatchFB='wrong';playWrong();}
+        render();
+      }},opt.title));
+    });
+    card.appendChild(opts);
+    
+    if(S.ruleMatchFB){
+      card.appendChild(h('div',{style:{marginTop:20,animation:'popIn .3s ease'}},
+        h('div',{style:{fontSize:18,fontWeight:800,color:S.ruleMatchFB==='correct'?'#059669':'#DC2626',marginBottom:12}},S.ruleMatchFB==='correct'?'🎉 Perfect! +2 Stars!':`Oops! It was ${q.title}`),
+        h('button',{className:'btn btn-success',onClick:()=>{
+          if(S.ruleMatchI<4){S.ruleMatchI++;S.ruleMatchFB=null;
+            const next = S.ruleMatchQ[S.ruleMatchI];
+            const others = RULES.filter(rx=>rx.id!==next.id).sort(()=>Math.random()-0.5).slice(0,3);
+            S.ruleMatchOptions = [next, ...others].sort(()=>Math.random()-0.5);
+            render();
+          }else{S.ruleMatchMode=false;markDone('rules');render();}
+        }},S.ruleMatchI<4?'Next Match →':'Finish Game!')
+      ));
+    }
+    w.appendChild(card);
+    return w;
+  }
+  
   const pills=h('div',{className:'pills'});RULES.forEach((r,i)=>{pills.appendChild(h('button',{className:'pill',style:{background:S.rI===i?`linear-gradient(135deg,${r.color},${r.color}CC)`:'#F1F5F9',color:S.rI===i?'#fff':'var(--text-light)'},onClick:()=>{S.rI=i;S.rExp=null;render();}},`${r.icon} ${r.title}`));});w.appendChild(pills);
   const rule=RULES[S.rI];
   const rc=h('div',{className:'card',style:{marginBottom:20}});rc.appendChild(h('h3',{style:{fontFamily:'var(--font-display)',fontSize:22,color:rule.color}},`${rule.icon} ${rule.title}`));
@@ -556,7 +654,18 @@ function renderRules(){
     r.appendChild(h('span',{className:'word-card',style:{background:`color-mix(in srgb,${rule.color} 15%,white)`,color:rule.color,fontSize:15}},p.wi));c.appendChild(r);
     if(S.rExp===i) c.appendChild(h('div',{style:{marginTop:8,padding:'8px 12px',background:`color-mix(in srgb,${rule.color} 5%,white)`,borderRadius:10,fontSize:14,color:'#374151',fontWeight:600,animation:'floatIn .3s ease'}},`✨ ${p.c}`));
     eg.appendChild(c);});w.appendChild(eg);
-  w.appendChild(h('button',{className:'btn btn-success btn-block',style:{marginTop:20},onClick:()=>{markDone('rules');}},'✅ Done! (+5 Stars)'));
+    
+  w.appendChild(h('button',{className:'btn btn-primary btn-block',style:{marginTop:20},onClick:()=>{
+    S.ruleMatchMode=true;S.ruleMatchI=0;S.ruleMatchScore=0;S.ruleMatchFB=null;
+    const rulesCopy = [...RULES].sort(()=>Math.random()-0.5);
+    S.ruleMatchQ = rulesCopy.slice(0, 5);
+    const current = S.ruleMatchQ[0];
+    const others = RULES.filter(rx=>rx.id!==current.id).sort(()=>Math.random()-0.5).slice(0,3);
+    S.ruleMatchOptions = [current, ...others].sort(()=>Math.random()-0.5);
+    render();
+  }},'🎮 Play Visual Rule Match!'));
+  
+  w.appendChild(h('button',{className:'btn btn-success btn-block',style:{marginTop:12},onClick:()=>{markDone('rules');}},'✅ Done Reading! (+5 Stars)'));
   return w;
 }
 
@@ -942,7 +1051,7 @@ function renderSequenceGame(){
 }
 
 function renderMemoryGame(){
-  const card=h('div',{className:'card',style:{textAlign:'center',border:'2px solid var(--rose)'}});
+  const card=h('div',{className:'game-card'});
   card.appendChild(h('h3',{style:{fontFamily:'var(--font-display)',fontSize:22,color:'var(--rose)',marginBottom:4}},'🃏 Memory Match'));
   card.appendChild(h('div',{style:{fontSize:13,color:'#6B7280',marginBottom:16}},`Moves: ${S.dMemMoves} • Pairs: ${S.dMemMatched.length/2}/${MEMORY_EMOJIS.length}`));
 
@@ -976,7 +1085,7 @@ function renderMemoryGame(){
 }
 
 function renderFocusTimer(){
-  const card=h('div',{className:'card',style:{textAlign:'center',border:'2px solid var(--cyan)'}});
+  const card=h('div',{className:'game-card'});
   card.appendChild(h('h3',{style:{fontFamily:'var(--font-display)',fontSize:22,color:'var(--cyan)',marginBottom:8}},'⏱️ Focus Timer Challenge'));
   card.appendChild(h('p',{style:{fontSize:14,color:'#6B7280',marginBottom:20}},'Set a timer and focus on a task (reading, writing, or studying) without getting distracted!'));
   card.appendChild(h('div',{className:'focus-timer',style:{fontSize:56,marginBottom:20}},formatTime(S.dFocusTimer)));
@@ -997,18 +1106,156 @@ function renderFocusTimer(){
   return card;
 }
 
+// ── GRAMMAR ──
+function renderGrammar(){
+  const w=h('div',{});w.appendChild(h('h2',{style:{fontFamily:'var(--font-display)',fontSize:26,color:'#3B82F6',marginBottom:4}},'🧩 Grammar Class 5'));
+  w.appendChild(h('p',{style:{color:'var(--text-light)',marginBottom:20}},'Learn parts of speech and tenses with fun quizzes!'));
+  
+  const pills=h('div',{className:'pills'});
+  GRAMMAR_LESSONS.forEach((l,i)=>{pills.appendChild(h('button',{className:'pill',style:{background:S.grI===i?`linear-gradient(135deg,${l.color},${l.color}CC)`:'#F1F5F9',color:S.grI===i?'#fff':'var(--text-light)'},onClick:()=>{S.grI=i;S.grPhase='learn';render();}},`${l.icon} ${l.title}`));});
+  w.appendChild(pills);
+  
+  const les=GRAMMAR_LESSONS[S.grI];
+  if(S.grPhase==='learn'){
+    const card=h('div',{className:'game-card'});
+    card.appendChild(h('h3',{style:{fontFamily:'var(--font-display)',fontSize:24,color:les.color,marginBottom:12}},`${les.icon} Let's Learn: ${les.title}`));
+    card.appendChild(h('div',{style:{fontSize:17,lineHeight:1.8,padding:20,background:`color-mix(in srgb,${les.color} 10%,white)`,borderRadius:16,color:'#374151',fontWeight:600}},les.learn));
+    card.appendChild(h('button',{className:'btn btn-primary',style:{marginTop:24},onClick:()=>{S.grPhase='quiz';S.grScore=0;S.grTotal=0;S.grFB=null;render();}},'🎯 Start Quiz!'));
+    w.appendChild(card);
+  } else {
+    const quiz=les.quiz[S.grTotal];
+    const card=h('div',{className:'game-card'});
+    card.appendChild(h('div',{className:'badge-tag'},`Question ${S.grTotal+1}/${les.quiz.length} • Score: ${S.grScore}`));
+    card.appendChild(h('h3',{style:{fontSize:22,marginBottom:24,color:'#1F2937'}},quiz.q));
+    
+    const opts=h('div',{style:{display:'flex',flexDirection:'column',gap:12,marginBottom:16}});
+    quiz.opts.forEach(opt=>{
+      let cls='btn-opt';
+      if(S.grFB){
+        if(opt===quiz.ans) cls+=' correct';
+        else if(opt===S.grTyped) cls+=' wrong';
+      }
+      opts.appendChild(h('button',{className:cls,disabled:!!S.grFB,onClick:()=>{
+        S.grTyped=opt;
+        if(opt===quiz.ans){S.grFB='correct';S.grScore++;playCorrect();addStars(2);}
+        else{S.grFB='wrong';playWrong();}
+        render();
+      }},opt));
+    });
+    card.appendChild(opts);
+    
+    if(S.grFB){
+      card.appendChild(h('div',{style:{marginTop:16,animation:'popIn .3s ease'}},
+        h('div',{style:{fontSize:18,fontWeight:800,color:S.grFB==='correct'?'#059669':'#DC2626',marginBottom:12}},S.grFB==='correct'?'🎉 Awesome! +2 Stars!':`Oops! The answer is: ${quiz.ans}`),
+        h('button',{className:'btn btn-success',onClick:()=>{
+          S.grTotal++;
+          if(S.grTotal<les.quiz.length){S.grFB=null;S.grTyped='';render();}
+          else{S.grPhase='done';render();}
+        }},S.grTotal<les.quiz.length?'Next Question →':'Finish Quiz!')
+      ));
+    }
+    w.appendChild(card);
+  }
+  
+  if(S.grPhase==='done'){
+    const end=h('div',{className:'card',style:{textAlign:'center',background:'#F0FDF4',border:'2px solid #86EFAC'}});
+    end.appendChild(h('h3',{style:{fontSize:24,color:'#166534',marginBottom:8}},'🏆 Quiz Complete!'));
+    end.appendChild(h('p',{style:{fontSize:16,color:'#15803D'}},`You scored ${S.grScore} out of ${les.quiz.length}!`));
+    end.appendChild(h('button',{className:'btn btn-primary',style:{marginTop:16},onClick:()=>{markDone('grammar');S.grPhase='learn';S.grI=(S.grI+1)%GRAMMAR_LESSONS.length;render();}},'Next Lesson →'));
+    w.appendChild(end);
+  }
+  return w;
+}
+
+// ── SPELL BEE ──
+function renderSpellBee(){
+  const w=h('div',{});w.appendChild(h('h2',{style:{fontFamily:'var(--font-display)',fontSize:26,color:'#F59E0B',marginBottom:4}},'🐝 Spell Bee Challenge'));
+  w.appendChild(h('p',{style:{color:'var(--text-light)',marginBottom:20}},'Dynamic words loaded from the internet!'));
+
+  if(S.sbMode==='setup'){
+    const card=h('div',{className:'game-card'});
+    card.appendChild(h('h3',{style:{fontSize:20,marginBottom:16}},'Select Difficulty'));
+    const btns=h('div',{style:{display:'flex',gap:10,flexWrap:'wrap'}});
+    [{lbl:'Medium (5th Grade)',q:'topics=school,science&max=50'},{lbl:'Hard (Spell Bee)',q:'sp=*&md=d&max=100'}].forEach(lvl=>{
+      btns.appendChild(h('button',{className:'btn btn-primary',onClick:()=>{fetchSpellBeeWords(lvl.q);}},lvl.lbl));
+    });
+    card.appendChild(btns);
+    if(S.sbLoading){card.appendChild(h('div',{style:{marginTop:16,color:'#D97706',fontWeight:'bold'}},'⏳ Fetching new words from dictionary API...'));}
+    w.appendChild(card);
+    return w;
+  }
+
+  // Play Mode
+  const wordObj = S.sbWords[S.sbI];
+  const card=h('div',{className:'game-card'});
+  card.appendChild(h('div',{className:'badge-tag'},`Word ${S.sbI+1}/${Math.min(10, S.sbWords.length)} • Score: ${S.sbScore}`));
+  
+  if(S.sbOptions.showHint) card.appendChild(h('div',{style:{padding:'10px',background:'#FFFBEB',borderRadius:10,fontSize:14,color:'#78350F',marginBottom:16,border:'2px dashed #FDE68A'}},`💡 Definition: ${wordObj.defs?wordObj.defs[0].split('\t')[1]||wordObj.defs[0]:'No definition available'}`));
+  
+  card.appendChild(h('button',{className:'btn',style:{background:'#FEF3C7',color:'#92400E',fontSize:24,padding:'16px',borderRadius:'50%',marginBottom:20,width:80,height:80},onClick:()=>playWord(wordObj.word)},'🔊'));
+  
+  card.appendChild(h('div',{},h('input',{className:'input-spell'+(S.sbFB==='correct'?' correct':S.sbFB==='wrong'?' incorrect':''),value:S.sbTyped,placeholder:'Type the word...',disabled:!!S.sbFB,autofocus:!S.sbFB,onInput:e=>{S.sbTyped=e.target.value;},onKeydown:e=>{if(e.key==='Enter'&&!S.sbFB&&S.sbTyped.trim()){checkSpellBee();}}})));
+  
+  if(!S.sbFB){
+    const actions=h('div',{style:{display:'flex',justifyContent:'center',gap:10,marginTop:12}});
+    actions.appendChild(h('button',{className:'btn btn-primary',onClick:checkSpellBee},'Check!'));
+    actions.appendChild(h('button',{className:'btn btn-ghost',onClick:()=>{S.sbOptions.showHint=true;render();}},'💡 Get Hint'));
+    card.appendChild(actions);
+  } else {
+    card.appendChild(h('div',{style:{marginTop:16,animation:'popIn .3s ease'}},
+      h('div',{style:{fontSize:18,fontWeight:800,color:S.sbFB==='correct'?'#059669':'#DC2626',marginBottom:12}},S.sbFB==='correct'?'🎉 Fantastic! +3 Stars!':`Incorrect. The word was: ${wordObj.word}`),
+      h('button',{className:'btn btn-success',onClick:()=>{
+        if(S.sbI<9 && S.sbI<S.sbWords.length-1){S.sbI++;S.sbFB=null;S.sbTyped='';S.sbOptions={};render();}
+        else{markDone('spellbee');S.sbMode='setup';render();}
+      }},S.sbI<9?'Next Word →':'Finish Challenge!')
+    ));
+  }
+  
+  const tr=h('div',{className:'progress-track',style:{marginTop:20}});tr.appendChild(h('div',{className:'progress-fill',style:{background:'linear-gradient(90deg,#FDE68A,#F59E0B)',width:`${((S.sbI+(S.sbFB?1:0))/Math.min(10, S.sbWords.length))*100}%`}}));card.appendChild(tr);
+  w.appendChild(card);
+  return w;
+}
+
+function checkSpellBee(){
+  if(S.sbTyped.toLowerCase().trim()===S.sbWords[S.sbI].word.toLowerCase()){S.sbFB='correct';S.sbScore++;playCorrect();addStars(3);}
+  else{S.sbFB='wrong';playWrong();}
+  render();
+}
+
+function fetchSpellBeeWords(query){
+  S.sbLoading=true;render();
+  fetch(`https://api.datamuse.com/words?${query}`)
+    .then(r=>r.json())
+    .then(data=>{
+      const valid=data.filter(w=>w.word&&!w.word.includes(' ')&&!w.word.includes('-'));
+      for(let i=valid.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[valid[i],valid[j]]=[valid[j],valid[i]];} // shuffle
+      if(valid.length===0) throw new Error('No words');
+      S.sbWords=valid.slice(0, 10);
+      S.sbLoading=false;S.sbMode='play';S.sbI=0;S.sbScore=0;S.sbFB=null;S.sbTyped='';S.sbOptions={};
+      render();
+    })
+    .catch(e=>{
+      S.sbLoading=false;S.sbMode='setup';
+      alert('Could not load words. Please check your internet connection.');
+      render();
+    });
+}
+
 // ── DEVATV GAMES (reuse some from Divisha + memory) ──
 function renderGamesV(){
   const w=h('div',{});w.appendChild(h('h2',{style:{fontFamily:'var(--font-display)',fontSize:26,color:'var(--cyan)',marginBottom:4}},'🎮 Fun Games'));
   if(!S.game){const grid=h('div',{style:{display:'grid',gap:14}});
     [{id:'scramble',icon:'🔀',t:'Word Scramble',d:'Unscramble letters!',c:'var(--cyan)'},
      {id:'missing',icon:'🕳️',t:'Missing Letters',d:'Fill the gaps!',c:'var(--rose)'}].forEach(g=>{
-      grid.appendChild(h('button',{className:'card card-btn',style:{fontFamily:'var(--font-body)'},onClick:()=>{S.game=g.id;S.gI=0;S.gAns='';S.gFB=null;S.gLetters={};if(g.id==='scramble')S.gScrambled=scrambleW(SCRAMBLE_WDS[0].word);render();}},
+      grid.appendChild(h('button',{className:'card card-btn',style:{fontFamily:'var(--font-body)'},onClick:()=>{S.game=g.id;S.gI=0;S.gAns='';S.gFB=null;S.gLetters={};
+        if(g.id==='scramble'){shuffleInPlace(SCRAMBLE_WDS); S.gScrambled=scrambleW(SCRAMBLE_WDS[0].word);}
+        if(g.id==='missing'){shuffleInPlace(MISSING_WDS);}
+        render();}},
         h('div',{style:{fontSize:36,marginBottom:8}},g.icon),h('div',{style:{fontWeight:800,fontSize:18,color:g.c}},g.t),h('div',{style:{fontSize:13,color:'#6B7280',marginTop:4}},g.d)));});
     w.appendChild(grid);return w;}
   w.appendChild(h('button',{className:'btn btn-ghost',style:{marginBottom:16},onClick:()=>{S.game=null;render();}},'← Back'));
   // Render just the game card without DOM manipulation tricks
-  if(S.game==='scramble'){const sw=SCRAMBLE_WDS[S.gI];const card=h('div',{className:'card',style:{textAlign:'center',background:'linear-gradient(135deg,#F0FDFA,#F0F4FF)',border:'2px solid var(--cyan)'}});
+  if(S.game==='scramble'){const sw=SCRAMBLE_WDS[S.gI];const card=h('div',{className:'game-card'});
     card.appendChild(h('h3',{style:{fontFamily:'var(--font-display)',fontSize:22,color:'var(--cyan)',marginBottom:16}},'🔀 Unscramble!'));
     card.appendChild(h('div',{style:{fontSize:13,color:'#6B7280',marginBottom:8}},`Hint: ${sw.hint}`));
     const tiles=h('div',{style:{display:'flex',gap:6,justifyContent:'center',flexWrap:'wrap',marginBottom:20}});
@@ -1018,7 +1265,7 @@ function renderGamesV(){
     if(S.gFB){const fb=h('div',{style:{animation:'popIn .3s ease'}});fb.appendChild(h('div',{style:{fontSize:18,fontWeight:800,color:S.gFB==='correct'?'#059669':'#DC2626',marginBottom:8}},S.gFB==='correct'?'🎉 +2 Stars!':`Word: ${sw.word}`));
       fb.appendChild(h('button',{className:'btn btn-success',onClick:()=>{S.gI=(S.gI+1)%SCRAMBLE_WDS.length;S.gAns='';S.gFB=null;S.gScrambled=scrambleW(SCRAMBLE_WDS[S.gI].word);render();}},'Next →'));card.appendChild(fb);}
     w.appendChild(card);
-  } else if(S.game==='missing'){const mw=MISSING_WDS[S.gI];const card=h('div',{className:'card',style:{textAlign:'center',background:'linear-gradient(135deg,#FFF0F5,#F5F0FF)',border:'2px solid var(--rose)'}});
+  } else if(S.game==='missing'){const mw=MISSING_WDS[S.gI];const card=h('div',{className:'game-card'});
     card.appendChild(h('h3',{style:{fontFamily:'var(--font-display)',fontSize:22,color:'var(--rose)',marginBottom:16}},'🕳️ Missing Letters!'));
     const tiles=h('div',{style:{display:'flex',gap:6,justifyContent:'center',flexWrap:'wrap',marginBottom:20}});
     mw.word.split('').forEach((l,i)=>{if(mw.m.includes(i)){let bdr='#E2E8F0',bg='#fff';if(S.gFB==='correct'){bdr='var(--teal)';bg='#D1FAE5';}else if(S.gFB==='wrong'&&(S.gLetters[i]||'').toLowerCase()!==l){bdr='var(--red)';bg='#FEE2E2';}else if(S.gFB==='wrong'){bdr='var(--teal)';bg='#D1FAE5';}
@@ -1029,6 +1276,178 @@ function renderGamesV(){
       fb.appendChild(h('button',{className:'btn btn-success',onClick:()=>{S.gI=(S.gI+1)%MISSING_WDS.length;S.gLetters={};S.gFB=null;render();}},'Next →'));card.appendChild(fb);}
     w.appendChild(card);
   }
+  return w;
+}
+
+// ── DEVATV MATH ──
+function generateMathQuestion() {
+  const ops = ['+','-'];
+  const op = ops[Math.floor(Math.random()*ops.length)];
+  let a, b;
+  if(op==='+'){
+    a = Math.floor(Math.random()*90)+10; // 10-99
+    b = Math.floor(Math.random()*90)+10;
+  } else {
+    a = Math.floor(Math.random()*90)+10;
+    b = Math.floor(Math.random()*a); // b is always <= a
+  }
+  S.mQ = `${a} ${op} ${b}`;
+  S.mAns = eval(S.mQ).toString();
+}
+
+function renderMath(){
+  const w=h('div',{});w.appendChild(h('h2',{style:{fontFamily:'var(--font-display)',fontSize:26,color:'#EF4444',marginBottom:4}},'🧮 Fast Math'));
+  w.appendChild(h('p',{style:{color:'var(--text-light)',marginBottom:20}},'Beat the clock in quick calculation!'));
+
+  if(S.mPhase==='setup'){
+    const card=h('div',{className:'game-card'});
+    card.appendChild(h('h3',{style:{fontSize:22,color:'#B91C1C',marginBottom:12}},'Ready for a Math Challenge?'));
+    card.appendChild(h('p',{style:{fontSize:14,color:'#7F1D1D',marginBottom:20}},'Answer as many questions as you can in 60 seconds!'));
+    card.appendChild(h('button',{className:'btn btn-primary',style:{fontSize:18,padding:'12px 30px'},onClick:()=>{
+      S.mPhase='play';S.mScore=0;S.mTotal=0;S.mTimer=60;S.mTyped='';S.mFB=null;generateMathQuestion();
+      if(S.mInterval) clearInterval(S.mInterval);
+      S.mInterval=setInterval(()=>{
+        S.mTimer--;
+        const el=document.getElementById('math-timer');
+        if(el) el.textContent=`⏱️ ${S.mTimer}s`;
+        if(S.mTimer<=0){
+          clearInterval(S.mInterval);S.mInterval=null;S.mPhase='done';
+          addStars(Math.floor(S.mScore/2)); markDone('d-math');
+          render();
+        }
+      },1000);
+      render();
+    }},'▶️ Start Timer!'));
+    w.appendChild(card);
+    return w;
+  }
+
+  if(S.mPhase==='play'){
+    const card=h('div',{className:'game-card'});
+    const topBar=h('div',{style:{display:'flex',justifyContent:'space-between',marginBottom:20,fontSize:18,fontWeight:800}});
+    topBar.appendChild(h('span',{style:{color:'#059669'}},`Score: ${S.mScore}`));
+    topBar.appendChild(h('span',{id:'math-timer',style:{color:'#DC2626'}},`⏱️ ${S.mTimer}s`));
+    card.appendChild(topBar);
+
+    card.appendChild(h('div',{style:{fontSize:56,fontWeight:900,color:'#1F2937',fontFamily:'var(--font-mono)',margin:'20px 0',letterSpacing:4}},S.mQ));
+    
+    const inp=h('input',{className:'input-spell'+(S.mFB==='correct'?' correct':S.mFB==='wrong'?' incorrect':''),style:{fontSize:32,width:120,textAlign:'center'},type:'number',value:S.mTyped,autofocus:!S.mFB,disabled:!!S.mFB,onInput:e=>{S.mTyped=e.target.value;},onKeydown:e=>{
+      if(e.key==='Enter'&&!S.mFB&&S.mTyped){
+        S.mTotal++;
+        if(S.mTyped===S.mAns){S.mFB='correct';S.mScore++;playCorrect();}else{S.mFB='wrong';playWrong();}
+        render();
+        setTimeout(()=>{if(S.mPhase==='play'){S.mFB=null;S.mTyped='';generateMathQuestion();render();}},500);
+      }
+    }});
+    card.appendChild(inp);
+    w.appendChild(card);
+  }
+
+  if(S.mPhase==='done'){
+    const card=h('div',{className:'game-card'});
+    card.appendChild(h('div',{style:{fontSize:56,marginBottom:16}},'⏰'));
+    card.appendChild(h('h3',{style:{fontSize:24,color:'#047857',marginBottom:8}},'Time is up!'));
+    card.appendChild(h('p',{style:{fontSize:18,color:'#065F46',marginBottom:20}},`You answered ${S.mScore} questions correctly out of ${S.mTotal}!`));
+    card.appendChild(h('button',{className:'btn btn-primary',onClick:()=>{S.mPhase='setup';render();}},'Play Again'));
+    w.appendChild(card);
+  }
+  return w;
+}
+
+// ── DEVATV MAPS ──
+const INDIA_STATES = [
+  {state:'Andhra Pradesh',cap:'Amaravati'},{state:'Arunachal Pradesh',cap:'Itanagar'},{state:'Assam',cap:'Dispur'},
+  {state:'Bihar',cap:'Patna'},{state:'Chhattisgarh',cap:'Raipur'},{state:'Goa',cap:'Panaji'},
+  {state:'Gujarat',cap:'Gandhinagar'},{state:'Haryana',cap:'Chandigarh'},{state:'Himachal Pradesh',cap:'Shimla'},
+  {state:'Jharkhand',cap:'Ranchi'},{state:'Karnataka',cap:'Bengaluru'},{state:'Kerala',cap:'Thiruvananthapuram'},
+  {state:'Madhya Pradesh',cap:'Bhopal'},{state:'Maharashtra',cap:'Mumbai'},{state:'Manipur',cap:'Imphal'},
+  {state:'Meghalaya',cap:'Shillong'},{state:'Mizoram',cap:'Aizawl'},{state:'Nagaland',cap:'Kohima'},
+  {state:'Odisha',cap:'Bhubaneswar'},{state:'Punjab',cap:'Chandigarh'},{state:'Rajasthan',cap:'Jaipur'},
+  {state:'Sikkim',cap:'Gangtok'},{state:'Tamil Nadu',cap:'Chennai'},{state:'Telangana',cap:'Hyderabad'},
+  {state:'Tripura',cap:'Agartala'},{state:'Uttar Pradesh',cap:'Lucknow'},{state:'Uttarakhand',cap:'Dehradun'},
+  {state:'West Bengal',cap:'Kolkata'}
+];
+
+function generateMapQuiz() {
+  if(S.mapT==='india'){
+    const list = [...INDIA_STATES].sort(()=>Math.random()-0.5);
+    const q = list[0];
+    const opts = list.slice(0,4);
+    S.mapQ = {text:`What is the capital of ${q.state}?`, ans:q.cap, opts:opts.map(o=>o.cap).sort(()=>Math.random()-0.5)};
+  } else if(S.mapT==='world') {
+    const list = [...S.mapData].sort(()=>Math.random()-0.5);
+    const q = list[0];
+    const opts = list.slice(0,4);
+    if(Math.random()>0.5){
+      // Guess flag
+      S.mapQ = {text:`Which country's flag is this?`, flag:q.flag, ans:q.name.common, opts:opts.map(o=>o.name.common).sort(()=>Math.random()-0.5)};
+    } else {
+      // Guess capital
+      S.mapQ = {text:`What is the capital of ${q.name.common}?`, flag:q.flag, ans:q.capital?.[0]||'Unknown', opts:opts.map(o=>o.capital?.[0]||'None').sort(()=>Math.random()-0.5)};
+    }
+  }
+}
+
+function fetchWorldData() {
+  S.mapLoading = true; render();
+  fetch('https://restcountries.com/v3.1/all?fields=name,capital,flag')
+    .then(r=>r.json())
+    .then(data=>{
+      S.mapData = data.filter(d=>d.capital&&d.capital.length>0&&d.flag);
+      S.mapLoading = false; S.mapI = 0; S.mapScore = 0; S.mapFB = null;
+      generateMapQuiz();
+      render();
+    }).catch(e=>{ S.mapLoading=false; S.mapT=null; alert('Network error loading map data!'); render(); });
+}
+
+function renderMaps(){
+  const w=h('div',{});w.appendChild(h('h2',{style:{fontFamily:'var(--font-display)',fontSize:26,color:'#10B981',marginBottom:4}},'🌍 World Explorer'));
+  w.appendChild(h('p',{style:{color:'var(--text-light)',marginBottom:20}},'Travel the world with map quizzes!'));
+
+  if(!S.mapT){
+    const grid=h('div',{style:{display:'grid',gap:12}});
+    grid.appendChild(h('button',{className:'card card-btn',onClick:()=>{S.mapT='india';S.mapI=0;S.mapScore=0;S.mapFB=null;generateMapQuiz();render();}},
+      h('div',{style:{fontSize:40}},'🇮🇳'),h('div',{style:{fontWeight:800,fontSize:18,color:'#F59E0B'}},'India Explorer'),h('div',{style:{fontSize:13,color:'#6B7280'}},'States and Capitals')));
+    grid.appendChild(h('button',{className:'card card-btn',onClick:()=>{S.mapT='world';fetchWorldData();}},
+      h('div',{style:{fontSize:40}},'🌎'),h('div',{style:{fontWeight:800,fontSize:18,color:'#10B981'}},'World Explorer'),h('div',{style:{fontSize:13,color:'#6B7280'}},'Flags and Capitals of the World')));
+    w.appendChild(grid);
+    if(S.mapLoading) w.appendChild(h('div',{style:{marginTop:16,textAlign:'center',color:'#10B981',fontWeight:'bold'}},'⏳ Packing our bags (Loading data...)'));
+    return w;
+  }
+
+  const q=S.mapQ;
+  const card=h('div',{className:'game-card'});
+  card.appendChild(h('div',{className:'badge-tag'},`Question ${S.mapI+1}/10 • Score: ${S.mapScore}`));
+
+  if(q.flag) card.appendChild(h('div',{style:{fontSize:64,marginBottom:12}},q.flag));
+  card.appendChild(h('h3',{style:{fontSize:20,color:'#1F2937',marginBottom:20}},q.text));
+
+  const opts=h('div',{style:{display:'flex',flexDirection:'column',gap:12,marginBottom:16}});
+  q.opts.forEach(opt=>{
+    let cls='btn-opt';
+    if(S.mapFB){
+      if(opt===q.ans) cls+=' correct';
+      else if(opt===S.mapFB.typed) cls+=' wrong';
+    }
+    opts.appendChild(h('button',{className:cls,disabled:!!S.mapFB,onClick:()=>{
+      if(opt===q.ans){S.mapFB={typed:opt,res:'correct'};S.mapScore++;playCorrect();addStars(1);}
+      else{S.mapFB={typed:opt,res:'wrong'};playWrong();}
+      render();
+    }},opt));
+  });
+  card.appendChild(opts);
+
+  if(S.mapFB){
+    card.appendChild(h('div',{style:{marginTop:20,animation:'popIn .3s ease'}},
+      h('div',{style:{fontSize:18,fontWeight:800,color:S.mapFB.res==='correct'?'#059669':'#DC2626',marginBottom:12}},S.mapFB.res==='correct'?'🎉 Correct!':'Oops!'),
+      h('button',{className:'btn btn-success',onClick:()=>{
+        S.mapI++;
+        if(S.mapI<10){S.mapFB=null;generateMapQuiz();render();}
+        else{S.mapT=null;markDone('d-maps');render();}
+      }},S.mapI<9?'Next Question →':'Finish Quiz!')
+    ));
+  }
+  w.appendChild(card);
   return w;
 }
 
@@ -1144,6 +1563,25 @@ function renderProgress(){
       h('div',{style:{fontSize:32,marginBottom:4}},b.i),h('div',{style:{fontSize:12,fontWeight:800,color:earned?'#374151':'var(--text-muted)'}},b.n),
       h('div',{style:{fontSize:11,color:'var(--text-muted)'}},b.t==='s'?`${b.need} stars`:`${b.need} lessons`)));});
   w.appendChild(bg);
+  
+  w.appendChild(h('h3',{style:{fontFamily:'var(--font-display)',fontSize:20,color:'#374151',marginBottom:12,marginTop:24}},'📈 Weekly Report'));
+  const rep=h('div',{className:'card',style:{background:'#F8FAFC',border:'2px solid #E2E8F0',marginBottom:20}});
+  if(!S.history || S.history.length===0){
+    rep.appendChild(h('div',{style:{color:'var(--text-muted)',fontStyle:'italic',textAlign:'center'}},'No activity recorded yet. Start learning to see your report!'));
+  } else {
+    const byDate={};
+    S.history.forEach(hItem=>{if(!byDate[hItem.date])byDate[hItem.date]=0;byDate[hItem.date]+=hItem.stars;});
+    const dates=Object.keys(byDate).sort().reverse().slice(0,7);
+    dates.forEach(d=>{
+      const row=h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'10px 0',borderBottom:'1px solid #E2E8F0'}});
+      const dObj=new Date(d);
+      const dStr=dObj.toLocaleDateString('en-IN',{weekday:'short',month:'short',day:'numeric'});
+      row.appendChild(h('div',{style:{fontWeight:600,color:'#475569'}}+(d===new Date().toISOString().split('T')[0]?' (Today)':''),dStr));
+      row.appendChild(h('div',{style:{fontWeight:800,color:'#F59E0B'}},`⭐ ${byDate[d]}`));
+      rep.appendChild(row);
+    });
+  }
+  w.appendChild(rep);
 
   // Generate cert button
   w.appendChild(h('button',{className:'btn btn-block',style:{marginTop:24,background:'linear-gradient(135deg,var(--amber),var(--orange))',color:'#fff',fontSize:18},
